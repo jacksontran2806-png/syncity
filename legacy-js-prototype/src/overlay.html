@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  html, body {
+    margin: 0; padding: 0; width: 100vw; height: 100vh;
+    background: transparent; overflow: hidden;
+  }
+  .blob-wrap {
+    position: fixed;
+    width: 42vmax; height: 42vmax;
+    margin-left: -21vmax; margin-top: -21vmax;
+    left: var(--x); top: var(--y);
+    pointer-events: none;
+    animation: drift var(--dur, 10s) ease-in-out infinite alternate;
+    animation-delay: var(--delay, 0s);
+  }
+  .blob-pulse {
+    width: 100%; height: 100%;
+    transform: scale(var(--pulse, 1));
+  }
+  .blob {
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--blob-color) 0%, transparent 68%);
+    filter: blur(var(--blur, 55px)) hue-rotate(var(--hue, 0deg));
+    opacity: var(--glow-opacity, 0.75);
+    mix-blend-mode: screen;
+    transition: opacity 500ms ease;
+  }
+  @keyframes drift {
+    0%   { transform: translate(-6%, 4%) scale(0.92) rotate(-5deg); }
+    50%  { transform: translate(4%, -5%) scale(1.08) rotate(4deg); }
+    100% { transform: translate(-3%, 6%) scale(0.97) rotate(-2deg); }
+  }
+</style>
+</head>
+<body>
+<div id="blobs"></div>
+<script src="overlay.js"></script>
+</body>
+</html>

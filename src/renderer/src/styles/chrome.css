@@ -1,0 +1,414 @@
+/* App chrome: floating boxes, the widget, the settings window, buttons. Everything here derives from --panel-opacity. */
+
+/* ---------- Widget dock ---------- */
+
+/* Floating boxes. left/top are written imperatively by DraggableBox — never
+   set them here, and never add a centering transform: the drag math works in
+   raw viewport pixels and a transform silently offsets every one of them. */
+.draggable-box {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: max-content;
+  cursor: grab;
+  pointer-events: auto;
+  touch-action: none; /* no scroll/pan gesture stealing the pointer mid-drag */
+}
+.draggable-box.is-dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+/* Controls inside a box keep the normal cursor — they don't start drags. */
+.draggable-box button,
+.draggable-box input,
+.draggable-box select {
+  cursor: default;
+}
+
+.widget-dock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Auto-hide: collapsed to a Dynamic-Island-style pill. */
+.widget-pill {
+  width: 120px;
+  height: 28px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  pointer-events: auto;
+  /* Tracks --panel-opacity like the rest of the chrome — the collapsed widget
+     must not be more solid than the expanded one. */
+  background: rgba(18, 18, 22, var(--panel-opacity, 0.55));
+  backdrop-filter: blur(calc(18px * var(--panel-opacity, 0.55) / 0.55));
+  border: 1px solid rgba(255, 255, 255, calc(0.08 * var(--panel-opacity, 0.55) / 0.55));
+  box-shadow: 0 6px 26px rgba(0, 0, 0, calc(0.45 * var(--panel-opacity, 0.55) / 0.55));
+  animation: pill-in 250ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.widget-pill img {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+.widget-pill-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+}
+/* the sliver of glow that says "still playing" */
+.widget-pill-glow {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--c1, #7c5cff), var(--c2, #4facfe));
+  opacity: 0.75;
+}
+@keyframes pill-in {
+  from {
+    opacity: 0;
+    transform: scale(0.86);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* App chrome. Everything here is derived from --panel-opacity (set on
+   .overlay-root from settings.panelOpacity, 0..1) so the widget and the
+   settings window fade together and stay consistent.
+
+   All five properties scale, not just the fill:
+     - fill    : the panel body
+     - border  : an unfaded 1px outline around a transparent panel reads as an
+                 empty floating rectangle, which looks broken rather than sheer
+     - shadow  : same reason
+     - blur    : frosted glass over nothing is still a visible pane, so the
+                 backdrop blur goes with it
+     - text    : as the fill drops away the text sits directly on the desktop,
+                 which can be any colour — the shadow ramps UP as opacity drops
+                 below the default. Alpha below 0 is clamped by CSS, so it
+                 contributes nothing at or above the default.
+   The /0.55 divisors normalise against the default, so the default setting
+   reproduces the original design exactly. */
+.widget,
+.panel {
+  width: 280px;
+  background: rgba(15, 15, 15, var(--panel-opacity, 0.55));
+  backdrop-filter: blur(calc(24px * var(--panel-opacity, 0.55) / 0.55)) saturate(1.4);
+  -webkit-backdrop-filter: blur(calc(24px * var(--panel-opacity, 0.55) / 0.55)) saturate(1.4);
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, calc(0.08 * var(--panel-opacity, 0.55) / 0.55));
+  box-shadow:
+    0 14px 40px rgba(0, 0, 0, calc(0.35 * var(--panel-opacity, 0.55) / 0.55)),
+    inset 0 1px 0 rgba(255, 255, 255, calc(0.06 * var(--panel-opacity, 0.55) / 0.55));
+  padding: 14px 16px;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, calc(0.55 - var(--panel-opacity, 0.55)));
+}
+
+.panel {
+  animation: panel-in 200ms ease-out;
+}
+
+/* The settings list is the one thing here that can grow without limit. Bound
+   the scrolling BODY, not the panel, so the header stays put and remains a
+   reliable drag handle. */
+.settings-body {
+  max-height: min(70vh, 620px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  cursor: default;
+  touch-action: auto; /* the box sets none for dragging; scrolling needs it back */
+}
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: grab;
+}
+.settings-header .panel-title {
+  margin-bottom: 0;
+}
+.settings-close {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 18px;
+  line-height: 1;
+  padding: 0 2px;
+  cursor: pointer;
+}
+.settings-close:hover {
+  color: #fff;
+}
+.settings-window .panel-title {
+  margin-bottom: 0;
+}
+.settings-window .settings-body {
+  margin-top: 10px;
+}
+/* Group heading inside the settings list. Sticky so the heading of whatever
+   group you're scrolled into stays visible. */
+.settings-section {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 14px 0 6px;
+  padding: 4px 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.42);
+  background: inherit;
+  backdrop-filter: blur(12px);
+}
+.settings-section:first-child {
+  margin-top: 0;
+}
+.settings-hint {
+  font-size: 11px;
+  opacity: 0.45;
+  white-space: nowrap;
+}
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.widget-connect {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.connect-btn,
+.text-btn,
+.quit-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-radius: 10px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 180ms ease-out, transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.connect-btn:hover,
+.text-btn:hover,
+.quit-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  transform: scale(1.03);
+}
+.quit-btn {
+  width: 100%;
+  margin-top: 12px;
+  text-align: center;
+  background: rgba(255, 70, 70, 0.14);
+  border-color: rgba(255, 70, 70, 0.25);
+}
+.quit-btn:hover {
+  background: rgba(255, 70, 70, 0.24);
+}
+
+.widget-track-stage {
+  position: relative;
+  height: 40px;
+  overflow: hidden;
+}
+.widget-track-slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: transform 420ms ease-out, opacity 420ms ease-out;
+}
+.widget-track-slide-entering {
+  transform: translateX(26px);
+  opacity: 0;
+}
+.widget-track-slide-active {
+  transform: translateX(0);
+  opacity: 1;
+}
+.widget-track-slide-leaving {
+  transform: translateX(-26px);
+  opacity: 0;
+}
+.widget-art {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.06);
+}
+.widget-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.widget-art-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(124, 92, 255, 0.5), rgba(79, 172, 254, 0.5));
+}
+.widget-meta {
+  min-width: 0;
+  flex: 1;
+}
+.widget-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.widget-artist {
+  font-size: 12px;
+  color: #9a9a9a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.widget-transport {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 10px;
+}
+
+.widget-flash {
+  margin-top: 6px;
+  font-size: 11px;
+  text-align: center;
+  color: #ffb4b4;
+}
+
+.widget-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1), background 180ms ease-out, filter 180ms ease-out;
+}
+.icon-btn:hover {
+  transform: scale(1.08);
+  filter: brightness(1.3);
+  background: rgba(255, 255, 255, 0.1);
+}
+.icon-btn-lg {
+  width: 32px;
+  height: 32px;
+  font-size: 15px;
+}
+.icon-btn-sm {
+  width: 26px;
+  height: 26px;
+  font-size: 12px;
+}
+.icon-btn-active {
+  color: #baffc9;
+  background: rgba(186, 255, 201, 0.12);
+}
+
+/* ---------- Settings panel ---------- */
+
+.panel-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  opacity: 0.9;
+}
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 12px;
+}
+.settings-label {
+  color: #c9c9c9;
+}
+.settings-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.settings-control select,
+.settings-control input[type='range'] {
+  accent-color: #7c5cff;
+}
+.settings-control select {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 4px 6px;
+  font-size: 12px;
+  max-width: 150px;
+}
+/* The closed <select> can be translucent (it sits on the widget material),
+   but the open dropdown is a separate native-rendered surface — `color`
+   inherits into <option> but `background` does not, so without this the
+   options render as white text on the OS's default white popup background
+   and are invisible. Needs an explicit solid background here. */
+.settings-control select option {
+  background: #1a1a1e;
+  color: #fff;
+}
+.settings-control input[type='color'] {
+  width: 26px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.settings-flash {
+  font-size: 11px;
+  color: #ffd27a;
+  text-align: right;
+  margin-top: -4px;
+  margin-bottom: 6px;
+}
+
+

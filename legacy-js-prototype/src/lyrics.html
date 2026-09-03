@@ -1,0 +1,124 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  :root {
+    --c1: #7c5cff;
+    --c2: #4facfe;
+  }
+  html, body {
+    margin: 0; padding: 0; width: 100vw; height: 100vh;
+    background: #0a0a0c; color: #f2f2f2;
+    font-family: -apple-system, "Segoe UI", sans-serif;
+    overflow: hidden;
+  }
+  #bg {
+    position: fixed; inset: -40px;
+    background-size: cover; background-position: center;
+    filter: blur(60px) brightness(0.45) saturate(1.3);
+    transition: background-image 900ms ease;
+    transform: scale(1.15);
+  }
+  #scrim { position: fixed; inset: 0; background: rgba(0,0,0,0.35); }
+  #stage {
+    position: relative; height: 100%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 28px; padding: 40px; box-sizing: border-box;
+  }
+  #art {
+    width: 220px; height: 220px; border-radius: 16px; object-fit: cover;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    display: none;
+  }
+  #meta { text-align: center; }
+  #title { font-size: 28px; font-weight: 600; }
+  #artist { font-size: 18px; opacity: 0.75; margin-top: 4px; }
+  #lyricsBox {
+    max-width: 720px; width: 90%; height: 260px; overflow: hidden;
+    -webkit-mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent);
+    text-align: center;
+  }
+  #lyricsList { transition: transform 400ms ease; }
+  .line { font-size: 22px; line-height: 1.9; opacity: 0.35; transition: opacity 300ms, transform 300ms, font-size 300ms; }
+  .line.active { opacity: 1; font-size: 27px; font-weight: 600; }
+  #empty { opacity: 0.6; font-size: 16px; }
+  #badge {
+    position: fixed; bottom: 18px; right: 22px; font-size: 11px; opacity: 0.45;
+    letter-spacing: 0.02em;
+  }
+  #hint {
+    position: fixed; top: 18px; left: 22px; font-size: 12px; opacity: 0.4;
+  }
+  #transportWrap {
+    position: fixed; bottom: 68px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; justify-content: center;
+  }
+  #aura {
+    position: absolute; inset: -70px -100px;
+    background:
+      radial-gradient(circle at 32% 35%, color-mix(in srgb, var(--c1) 85%, transparent) 0%, transparent 62%),
+      radial-gradient(circle at 68% 65%, color-mix(in srgb, var(--c2) 85%, transparent) 0%, transparent 62%);
+    filter: blur(34px);
+    opacity: 0.65;
+    mix-blend-mode: screen;
+    animation: drift 11s ease-in-out infinite alternate;
+    transition: background 900ms ease;
+    pointer-events: none;
+  }
+  @keyframes drift {
+    0%   { transform: translate(-4%, 3%) scale(1) rotate(0deg); }
+    50%  { transform: translate(3%, -4%) scale(1.1) rotate(6deg); }
+    100% { transform: translate(-2%, 4%) scale(0.94) rotate(-4deg); }
+  }
+  #transport {
+    position: relative; z-index: 1;
+    display: flex; align-items: center; gap: 18px;
+    background: color-mix(in srgb, var(--c1) 10%, rgba(255,255,255,0.05));
+    backdrop-filter: blur(22px) saturate(1.5);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 999px; padding: 10px 22px;
+    transition: background 900ms ease;
+  }
+  #transport button {
+    background: none; border: none; color: #f2f2f2; font-size: 20px;
+    cursor: pointer; opacity: 0.85; padding: 4px 8px; line-height: 1;
+    transition: opacity 150ms, transform 150ms;
+  }
+  #transport button:hover { opacity: 1; transform: scale(1.12); }
+  #repeatViewBtn { font-size: 13px; opacity: 0.7; }
+  #repeatViewBtn.active { opacity: 1; color: #baffc9; }
+  #transportMsg {
+    position: fixed; bottom: 122px; left: 50%; transform: translateX(-50%);
+    font-size: 12px; opacity: 0.7; white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+  <div id="bg"></div>
+  <div id="scrim"></div>
+  <div id="stage">
+    <img id="art" />
+    <div id="meta">
+      <div id="title">Not connected</div>
+      <div id="artist">Connect Spotify from the control panel</div>
+    </div>
+    <div id="lyricsBox">
+      <div id="lyricsList"></div>
+      <div id="empty" style="display:none">No synced lyrics found for this track.</div>
+    </div>
+  </div>
+  <div id="hint">now playing</div>
+  <div id="transportMsg"></div>
+  <div id="transportWrap">
+    <div id="aura"></div>
+    <div id="transport">
+      <button id="prevViewBtn" title="Previous">⏮</button>
+      <button id="repeatViewBtn" title="Loop">⟲</button>
+      <button id="nextViewBtn" title="Skip">⏭</button>
+    </div>
+  </div>
+  <div id="badge">lyrics: LRCLIB (community-sourced, demo only — not a licensed commercial source)</div>
+<script src="lyrics-view.js"></script>
+</body>
+</html>

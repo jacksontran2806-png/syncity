@@ -1,0 +1,11 @@
+/* Stylesheet entry point. Nothing lives here — each sheet owns one area of the
+   UI so a rule can be found by asking "which part of the app is this?".
+   Import order is cascade order: base first, then everything else, which are
+   disjoint by class name and so order-independent among themselves. */
+
+@import './styles/base.css';
+@import './styles/glow.css';
+@import './styles/chrome.css';
+@import './styles/fullscreen.css';
+@import './styles/album.css';
+@import './styles/lyrics.css';

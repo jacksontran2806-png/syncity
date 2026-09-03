@@ -1,0 +1,81 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  body {
+    font-family: -apple-system, "Segoe UI", sans-serif;
+    background: #16161a; color: #eee; margin: 0; padding: 20px;
+  }
+  h1 { font-size: 16px; margin: 0 0 4px; }
+  .sub { font-size: 12px; opacity: 0.55; margin-bottom: 18px; }
+  section { margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #2a2a30; }
+  label { display: block; font-size: 12px; opacity: 0.75; margin-bottom: 4px; }
+  .row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  button {
+    background: #2d2d35; color: #eee; border: 1px solid #3a3a42; border-radius: 6px;
+    padding: 8px 14px; font-size: 13px; cursor: pointer;
+  }
+  button:hover { background: #3a3a42; }
+  button.primary { background: #1db954; border-color: #1db954; color: #04220f; font-weight: 600; }
+  input[type=range] { flex: 1; }
+  select { background: #2d2d35; color: #eee; border: 1px solid #3a3a42; border-radius: 6px; padding: 6px; }
+  #status { font-size: 13px; }
+  #status.ok { color: #1db954; }
+  #status.bad { color: #e05252; }
+  #nowplaying { font-size: 12px; opacity: 0.7; min-height: 34px; }
+  input[type=color] { width: 40px; height: 28px; padding: 0; border: none; background: none; }
+</style>
+</head>
+<body>
+  <h1>Glow prototype — control panel</h1>
+  <div class="sub">Prototype build. No installer, no tray icon yet — this window is the app.</div>
+
+  <section>
+    <div id="status">checking Spotify connection…</div>
+    <div class="row" style="margin-top:8px">
+      <button class="primary" id="connectBtn">Connect Spotify</button>
+    </div>
+    <div id="nowplaying"></div>
+    <div class="row" style="margin-top:10px">
+      <button id="prevBtn" title="Previous">⏮</button>
+      <button id="nextBtn" title="Skip">⏭</button>
+      <button id="repeatBtn" title="Loop">Loop: Off</button>
+    </div>
+  </section>
+
+  <section>
+    <label>Glow thickness</label>
+    <div class="row"><input type="range" id="thickness" min="6" max="70" value="28" /></div>
+    <label>Glow intensity</label>
+    <div class="row"><input type="range" id="intensity" min="0" max="100" value="80" /></div>
+    <label>Animation style</label>
+    <div class="row">
+      <select id="animation">
+        <option value="breathe">Breathe</option>
+        <option value="pulse">Pulse</option>
+        <option value="static">Static</option>
+      </select>
+    </div>
+  </section>
+
+  <section>
+    <div class="row">
+      <label style="margin:0">Manual color override</label>
+      <input type="checkbox" id="overrideEnabled" />
+      <input type="color" id="overrideColor" value="#8a5cf6" />
+    </div>
+  </section>
+
+  <section>
+    <label>Overlay / lyrics monitor</label>
+    <div class="row"><select id="monitorSelect"></select></div>
+  </section>
+
+  <section style="border-bottom:none">
+    <button id="lyricsBtn">Toggle fullscreen lyrics view</button>
+  </section>
+
+<script src="control.js"></script>
+</body>
+</html>

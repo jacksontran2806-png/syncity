@@ -1,0 +1,22 @@
+/* Glow layer: the canvas modes (Trail/Aura/Lava) paint themselves through
+   render/shared/compositeGlow.ts. This sheet only owns the two containers
+   they mount into. Ambience — a static CSS conic-gradient ring, the fourth
+   animation mode that used to live here — was deleted outright rather than
+   kept alongside these; the rules that only it used (the ring stack, its
+   drift/breathe keyframes, --glow-angle) went with it. */
+
+.glow-root {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  transform-origin: center;
+  transition: transform 150ms ease-out, opacity 150ms ease-out;
+}
+
+.glow-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}

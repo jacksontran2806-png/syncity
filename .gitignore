@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Build output
+out/
+dist/
+
+# Secrets — real Spotify/Apple Music credentials live in .env locally.
+# .env.example is the template and IS committed.
+.env
+.env.local
+.env.*.local
+
+# Electron userData equivalents that sometimes leak into a project dir
+tokens.json
+settings.json
+
+# Editor/OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*

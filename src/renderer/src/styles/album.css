@@ -1,0 +1,118 @@
+/* Album fullscreen mode, plus the blurred full-bleed art backdrop that Lyrics mode also uses. */
+
+/* ---------- Album fullscreen mode ---------- */
+
+.album-fullscreen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.album-stage {
+  position: relative;
+  width: min(60vh, 60vw);
+  height: min(60vh, 60vw);
+}
+.album-slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  transition: transform 500ms ease-out, opacity 500ms ease-out;
+}
+.album-slide-entering {
+  transform: translateX(48px) scale(0.96);
+  opacity: 0;
+}
+.album-slide-active {
+  transform: translateX(0) scale(1);
+  opacity: 1;
+}
+.album-slide-leaving {
+  transform: translateX(-48px) scale(0.96);
+  opacity: 0;
+}
+.album-art-big {
+  width: 100%;
+  height: 100%;
+  max-width: 420px;
+  max-height: 420px;
+  border-radius: 28px;
+  object-fit: cover;
+  transition: box-shadow 700ms ease-out;
+}
+.album-art-big-placeholder {
+  background: linear-gradient(135deg, rgba(124, 92, 255, 0.5), rgba(79, 172, 254, 0.5));
+}
+.album-title {
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+}
+.album-artist {
+  font-size: 15px;
+  color: #9a9a9a;
+  text-align: center;
+}
+.album-transport {
+  position: fixed;
+  bottom: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  background: rgba(15, 15, 15, 0.5);
+  backdrop-filter: blur(20px);
+  pointer-events: auto;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  padding: 10px 26px;
+}
+
+/* ---------- Full-bleed album art backdrop (Album mode + Lyrics) ---------- */
+
+.album-backdrop {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.album-backdrop-layer {
+  position: absolute;
+  inset: 0;
+  transition: opacity 600ms ease-out;
+}
+.album-backdrop-media {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* crop to fill — never letterbox */
+  filter: blur(50px);
+  transform: scale(1.12); /* hide the blur's soft edge */
+}
+/* No motion artwork for this track: slow push on the static art instead of
+   faking video the provider doesn't have. */
+.album-backdrop-kenburns {
+  animation: ken-burns 20s ease-in-out infinite alternate;
+}
+@keyframes ken-burns {
+  from {
+    transform: scale(1.12);
+  }
+  to {
+    transform: scale(1.18);
+  }
+}
+.album-backdrop-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+

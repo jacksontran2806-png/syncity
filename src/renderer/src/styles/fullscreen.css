@@ -1,0 +1,22 @@
+/* Shared by both fullscreen views (Album, Lyrics). */
+
+/* ---------- Shared fullscreen-mode chrome ---------- */
+
+.fullscreen-back {
+  position: fixed;
+  top: 22px;
+  left: 22px;
+  z-index: 2;
+  /* the fullscreen container above this is pointer-events:none so the
+     desktop stays click-through — this re-enables it just for the button */
+  pointer-events: auto;
+}
+.fullscreen-back .icon-btn {
+  width: 36px;
+  height: 36px;
+  font-size: 20px;
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(16px);
+}
+
+
