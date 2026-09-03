@@ -1,7 +1,7 @@
 import { GlowCanvas } from './glow/GlowCanvas';
 import { useStore } from '../store';
 
-/** Dispatcher only. Trail, Aura and Lava all run through the one canvas
+/** Dispatcher only. Trail and Aura both run through the one canvas
  *  driver; None renders nothing. */
 export function GlowLayer(): JSX.Element {
   const mode = useStore((s) => s.settings.animationMode);

@@ -16,6 +16,8 @@ export function loadSettings(): AppSettings {
     // reproduces its look, so the safest landing is no glow at all rather than
     // surprising the user with a different animation on next launch.
     if (raw?.animationMode === 'ambience') raw.animationMode = 'none';
+    // 'lava' mode was deleted outright too, same reasoning: same landing spot.
+    if (raw?.animationMode === 'lava') raw.animationMode = 'none';
     // gradientMode only ever configured the deleted ambience ring; drop it so
     // it doesn't linger as a dead key in settings.json forever.
     if (raw && 'gradientMode' in raw) delete raw.gradientMode;

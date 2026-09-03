@@ -2,7 +2,7 @@
 //
 // The whole rounded rect — 4 straight edges AND 4 corner arcs — is one
 // continuous arc-length parameterization. Nothing here is split per-edge, and
-// no caller should ever build its own path: Trail, Aura and Lava all read from
+// no caller should ever build its own path: Trail and Aura both read from
 // this module, which is what guarantees a corner is never a special case.
 
 export interface RigPoint {

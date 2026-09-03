@@ -83,14 +83,14 @@ export function App(): JSX.Element {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [setViewMode, setPanel]);
 
-  // Trail, Aura and Lava all drive the glow off real system-audio loudness
+  // Trail and Aura both drive the glow off real system-audio loudness
   // (see audio.ts) — only running the capture while it's needed.
   //
   // Depends on the boolean, not the raw mode string: startBassEnvelope() opens
   // a fresh AudioContext + getDisplayMedia() capture every time it's called,
   // which is expensive and briefly interrupts the audio-reactive glow. Keying
   // this effect on settings.animationMode directly meant switching
-  // Trail -> Aura -> Lava while tuning settings tore the capture down and
+  // Trail -> Aura while tuning settings tore the capture down and
   // renegotiated it on every single switch, for no reason — none of those
   // transitions need audio to stop. Only a transition to/from 'none' does.
   const audioNeeded = settings.animationMode !== 'none';

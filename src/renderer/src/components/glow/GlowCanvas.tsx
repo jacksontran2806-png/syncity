@@ -4,7 +4,6 @@ import { compositeGlow, GLOW_STACK } from '../../render/shared/compositeGlow';
 import { crossfadePalette } from '../../render/shared/palette';
 import { createTrailRenderer } from '../../render/trail/trail';
 import { createAuraRenderer } from '../../render/aura/energyMap';
-import { createLavaRenderer } from '../../render/lava/lava';
 import { countingContext, createProfileReporter, profilingEnabled } from '../../render/shared/profile';
 import type { ModeRenderer } from '../../render/shared/types';
 import type { AnimationMode, GlowPalette } from '@shared/types';
@@ -20,7 +19,6 @@ export type CanvasMode = Exclude<AnimationMode, 'none'>;
 const RENDERERS: Record<CanvasMode, () => ModeRenderer> = {
   trail: createTrailRenderer,
   aura: createAuraRenderer,
-  lava: createLavaRenderer,
 };
 
 /**

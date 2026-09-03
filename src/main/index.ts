@@ -21,12 +21,29 @@ import { registerIpc } from './ipc';
 import { registerHotkeys, unregisterHotkeys } from './hotkeys';
 import { applyWindowMode, createOverlayWindow, getOverlayWindow, watchDisplayChanges, moveOverlayToDisplay } from './windows';
 import { createTray } from './tray';
+import { registerCrashDiagnostics } from './crashDiagnostics';
 
 // Must be set before app.ready. Electron already ships a Per-Monitor-V2 DPI
 // manifest, so this is belt-and-braces rather than the fix for the fullscreen
 // margin — that was setBounds() being clamped by resizable:false (windows.ts).
 // Left in because it costs nothing and rules the DPI path out entirely.
 app.commandLine.appendSwitch('high-dpi-support', '1');
+
+// THE WHOLE-APP-VANISHES FIX. Windows' native window-occlusion tracking
+// (Chromium's CalculateNativeWinOcclusion) recalculates on every focus change,
+// alt-tab, and hide/show — and has long-documented crash/hang bugs specifically
+// with transparent, frameless, always-on-top windows (chromium issue 1442867
+// and its Electron duplicates). That's this window exactly: transparent,
+// frame:false, alwaysOnTop(true,'screen-saver'), and hidden/shown via
+// win.hide()/showInactive() from BOTH Escape and auto-hide. A crash there can
+// take the whole renderer/GPU pipeline down with it — with only one window and
+// no explicit render-process-gone handling (added below as a backstop), that
+// reads exactly as "the app vanished from Task Manager" with nothing in our
+// own JS-level uncaughtException/unhandledRejection logs, because it never
+// was a JS-level error. This switch turns the feature off outright; it costs
+// nothing visible (occlusion tracking is a background-throttling hint, not a
+// rendering feature) and is the standard fix for this exact symptom.
+app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
 
 const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
 const REDIRECT_URI = process.env.SPOTIFY_REDIRECT_URI || 'http://127.0.0.1:8888/callback';
@@ -107,6 +124,11 @@ app.whenReady().then(() => {
   enableSystemAudioCapture();
   createOverlayWindow(settings.displayId, settings.windowMode);
   createTray(() => send('ui:open-settings'));
+
+  // Backstop for the crash class the disable-features switch above targets —
+  // logs it if it still happens, and rebuilds the window instead of leaving
+  // the whole app gone.
+  registerCrashDiagnostics(getOverlayWindow, () => createOverlayWindow(settings.displayId, settings.windowMode));
 
   registerIpc({ getSettings: () => settings, patchSettings, provider, loop, clientIdConfigured: !!CLIENT_ID });
   registerHotkeys({ getSettings: () => settings, patchSettings, send });

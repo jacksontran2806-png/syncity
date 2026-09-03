@@ -1,5 +1,5 @@
 // Shared simplex noise. Aura uses it for its edge displacement, Trail reuses
-// the exact same instance for its living-skin texture, and Lava uses it for
+// the exact same instance for its living-skin texture, and Trail also draws on it for
 // blob drift — one seeded generator, imported everywhere, never re-set-up.
 
 import { createNoise2D } from 'simplex-noise';

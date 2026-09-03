@@ -6,7 +6,9 @@
   position: fixed;
   top: 22px;
   left: 22px;
-  z-index: 2;
+  /* 10 = readable/interactive foreground, above the glow ring (5) — see the
+     stacking scale documented on .glow-root. */
+  z-index: 10;
   /* the fullscreen container above this is pointer-events:none so the
      desktop stays click-through — this re-enables it just for the button */
   pointer-events: auto;

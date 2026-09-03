@@ -15,6 +15,7 @@
   position: relative;
   width: min(60vh, 60vw);
   height: min(60vh, 60vw);
+  z-index: 10; /* above the glow ring (5) — see .glow-root */
 }
 .album-slide {
   position: absolute;
@@ -74,6 +75,7 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 999px;
   padding: 10px 26px;
+  z-index: 10; /* above the glow ring (5) — see .glow-root */
 }
 
 /* ---------- Full-bleed album art backdrop (Album mode + Lyrics) ---------- */
@@ -83,6 +85,7 @@
   inset: 0;
   overflow: hidden;
   pointer-events: none;
+  z-index: 1; /* below .glow-root (5) — see the comment there */
 }
 .album-backdrop-layer {
   position: absolute;

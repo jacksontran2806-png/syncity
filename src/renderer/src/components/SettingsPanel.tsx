@@ -48,7 +48,6 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }): JSX.Elemen
               ['none', 'None'],
               ['trail', 'Trail'],
               ['aura', 'Aura'],
-              ['lava', 'Lava'],
             ]}
           />
           <Slider label="Thickness" k="thickness" min={6} max={80} />

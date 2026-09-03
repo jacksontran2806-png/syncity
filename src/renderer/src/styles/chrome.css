@@ -13,6 +13,10 @@
   cursor: grab;
   pointer-events: auto;
   touch-action: none; /* no scroll/pan gesture stealing the pointer mid-drag */
+  /* 20 = top of the app's stacking scale — the widget/settings boxes stay
+     above the glow ring (5) and any fullscreen-mode content (10) regardless
+     of DOM order. See .glow-root for the full scale. */
+  z-index: 20;
 }
 .draggable-box.is-dragging {
   cursor: grabbing;

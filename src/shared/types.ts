@@ -34,14 +34,12 @@ export interface NowPlaying {
 // none  = no glow at all (default)
 // trail = a directed beam of energy whipping around the perimeter
 // aura  = traveling ripple waves along the perimeter
-// lava  = drifting metaball blobs that merge and separate
 //
-// 'ambience' (a static CSS conic-gradient ring) existed here and was deleted
-// outright, not replaced — it had no reason to exist once Trail/Aura/Lava all
-// render through the same canvas pipeline. GradientMode went with it: it was
-// the ring's only consumer. See settingsStore.ts for the migration off saved
-// 'ambience' settings.
-export type AnimationMode = 'none' | 'trail' | 'aura' | 'lava';
+// Two modes that used to live here are gone, both deleted outright rather
+// than replaced: 'ambience' (a static CSS conic-gradient ring — GradientMode
+// went with it, it was the ring's only consumer) and 'lava' (metaball blobs).
+// See settingsStore.ts for the migration off both saved values.
+export type AnimationMode = 'none' | 'trail' | 'aura';
 
 // Lyrics view backdrop.
 // transparent = desktop shows through

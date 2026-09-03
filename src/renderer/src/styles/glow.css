@@ -1,4 +1,4 @@
-/* Glow layer: the canvas modes (Trail/Aura/Lava) paint themselves through
+/* Glow layer: the canvas modes (Trail/Aura) paint themselves through
    render/shared/compositeGlow.ts. This sheet only owns the two containers
    they mount into. Ambience — a static CSS conic-gradient ring, the fourth
    animation mode that used to live here — was deleted outright rather than
@@ -11,6 +11,15 @@
   pointer-events: none;
   transform-origin: center;
   transition: transform 150ms ease-out, opacity 150ms ease-out;
+  /* Album and Lyrics modes paint a full-bleed blurred art backdrop
+     (.album-backdrop / .lyrics-backdrop, z-index 1) that covers edge to edge —
+     same place this ring lives. Without an explicit z-index here, plain DOM
+     order put that backdrop on top and hid Trail/Aura completely in both
+     modes, even though the canvas was rendering the whole time. This is the
+     one stacking scale for the app: 1 = full-bleed backdrops, 5 = this glow
+     ring, 10 = readable/interactive foreground content, 20 = the draggable
+     widget/settings boxes (see chrome.css, album.css, lyrics.css). */
+  z-index: 5;
 }
 
 .glow-canvas {
