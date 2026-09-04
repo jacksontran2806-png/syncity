@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../store';
-import { Choice, Row, Section, Slider, TextButton, Toggle } from './settingsControls';
-import { autoTrailLengthPct, type RGB } from '@shared/types';
+import { Choice, Row, Section, Slider, TextButton, Toggle } from './SettingsControls';
+import { ColorWheelPicker } from './ColorWheelPicker';
+import { FONT_THEMES } from '../lib/fontThemes';
+import type { FontTheme } from '@shared/types';
 
 const LYRIC_NUDGE_MS = 250;
 
-function rgbToHex({ r, g, b }: RGB): string {
-  return '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('');
-}
-function hexToRgb(hex: string): RGB {
-  return { r: parseInt(hex.slice(1, 3), 16), g: parseInt(hex.slice(3, 5), 16), b: parseInt(hex.slice(5, 7), 16) };
-}
+/** Built from the theme table itself, so adding a pairing there is enough to
+ *  make it appear here — no second list to keep in step. */
+const FONT_OPTIONS = (Object.keys(FONT_THEMES) as FontTheme[]).map(
+  (key) => [key, FONT_THEMES[key].label] as const
+);
 
 const pct = (v: number): string => `${Math.round(v * 100)}%`;
 const secs = (ms: number): string => `${ms > 0 ? '+' : ''}${(ms / 1000).toFixed(2)}s`;
@@ -40,52 +41,19 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }): JSX.Elemen
       {/* data-nodrag: this region scrolls, and grabbing its scrollbar must
           scroll the list, not drag the whole window. The header is the handle. */}
       <div className="settings-body" data-nodrag>
-        <Section title="Glow">
-          <Choice
-            label="Animation"
-            k="animationMode"
-            options={[
-              ['none', 'None'],
-              ['trail', 'Trail'],
-              ['aura', 'Aura'],
-            ]}
-          />
-          <Slider label="Thickness" k="thickness" min={6} max={80} />
-        </Section>
-
-        {settings.animationMode === 'trail' && (
-          <Section title="Trail">
-            <TrailLengthRow />
-            <Slider label="Trail speed" k="trailSpeed" min={200} max={3000} step={50} />
-            <Slider label="Speed reactivity" k="trailSpeedReactivity" min={0} max={100} scale={100} format={pct} />
-            <Slider label="Max speed ×" k="trailMaxSpeedMultiplier" min={100} max={300} step={5} scale={100} format={pct} />
-            <Slider label="Texture (slow)" k="trailTextureAmp1" min={0} max={12} step={0.5} />
-            <Slider label="Texture (fast)" k="trailTextureAmp2" min={0} max={6} step={0.25} />
-          </Section>
-        )}
-
-        {settings.animationMode === 'aura' && (
-          <Section title="Aura">
-            <Slider label="Wave count" k="auraWaveCount" min={1} max={4} />
-            <Slider label="Wave height" k="auraWaveHeight" min={10} max={300} step={5} scale={100} format={pct} />
-            <Slider label="Wave speed" k="auraWaveSpeed" min={10} max={300} step={5} scale={100} format={pct} />
-            <Slider label="Ripple detail" k="auraRippleDetail" min={0} max={8} step={0.5} />
-          </Section>
-        )}
-
         <Section title="Color">
           <Toggle label="Override album color" k="colorOverrideEnabled" />
           {settings.colorOverrideEnabled && (
             <Row label="Colors">
-              <input
-                type="color"
-                value={rgbToHex(settings.overridePrimary)}
-                onChange={(e) => updateSettings({ overridePrimary: hexToRgb(e.target.value) })}
+              <ColorWheelPicker
+                label="Primary color"
+                value={settings.overridePrimary}
+                onChange={(overridePrimary) => updateSettings({ overridePrimary })}
               />
-              <input
-                type="color"
-                value={rgbToHex(settings.overrideSecondary)}
-                onChange={(e) => updateSettings({ overrideSecondary: hexToRgb(e.target.value) })}
+              <ColorWheelPicker
+                label="Secondary color"
+                value={settings.overrideSecondary}
+                onChange={(overrideSecondary) => updateSettings({ overrideSecondary })}
               />
             </Row>
           )}
@@ -98,17 +66,28 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }): JSX.Elemen
             options={[
               ['transparent', 'Transparent'],
               ['albumBlend', 'Album Blend'],
-              ['solid', 'Solid'],
+              ['custom', 'Custom color'],
             ]}
           />
-          {settings.lyricsBackground === 'solid' && (
-            <Choice
-              label="Solid color"
-              k="lyricsSolidColor"
-              options={[
-                ['black', 'Black'],
-                ['white', 'White'],
-              ]}
+          {settings.lyricsBackground === 'custom' && (
+            <Row label="Background color">
+              {/* Lyric text color is still computed live from this pick (see
+                  colorUtils.contrastingLyricColor) — any color stays readable. */}
+              <ColorWheelPicker
+                label="Lyrics background color"
+                value={settings.lyricsCustomColor}
+                onChange={(lyricsCustomColor) => updateSettings({ lyricsCustomColor })}
+              />
+            </Row>
+          )}
+          {settings.lyricsBackground === 'albumBlend' && (
+            <Slider
+              label="Blend colors"
+              k="albumBlendColorCount"
+              min={1}
+              max={3}
+              step={1}
+              format={(v) => (v <= 1 ? '1 (flat tint)' : `${v} (gradient)`)}
             />
           )}
           <Choice
@@ -119,10 +98,22 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }): JSX.Elemen
               ['bounce', 'Bounce'],
               ['blurFocus', 'Blur Focus'],
               ['stackedFade', 'Stacked Fade'],
+              ['giantWord', 'Giant Word'],
             ]}
           />
-          <Toggle label="Equal word emphasis" k="equalWordEmphasis" />
           <Toggle label="Full-bleed album art" k="albumFullBleed" />
+          {/* Independent of full-bleed art: a flat custom color behind Album
+              fullscreen mode — the art (if also on) still paints over it. */}
+          <Toggle label="Album mode: custom background" k="albumCustomBgEnabled" />
+          {settings.albumCustomBgEnabled && (
+            <Row label="Album background color">
+              <ColorWheelPicker
+                label="Album background color"
+                value={settings.albumCustomColor}
+                onChange={(albumCustomColor) => updateSettings({ albumCustomColor })}
+              />
+            </Row>
+          )}
 
           {/* Same knob as the lyrics view's sync bar, mirrored here so it's
               findable. Positive holds the lyrics back. */}
@@ -160,8 +151,65 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }): JSX.Elemen
             />
             <span className="settings-hint">Ctrl+Alt+F</span>
           </Row>
-          <Slider label="Safe-area offset" k="safeAreaOffsetPx" min={0} max={80} />
+          {/* Where the compact widget lives and how it opens. Dragging belongs
+              to Free alone — Default parks it, Notch pins it to the top edge. */}
+          <Choice
+            label="Overlay mode"
+            k="overlayMode"
+            options={[
+              ['default', 'Default'],
+              ['notch', 'Notch (top edge)'],
+              ['free', 'Free (draggable)'],
+            ]}
+          />
+          {/* Default parks the widget top-centre, so the only placement knob it
+              has is how far down from the edge. Notch sits flush against the
+              edge by definition, so the offset has nothing to apply to there. */}
+          {settings.overlayMode === 'default' && (
+            <Slider label="Distance from top" k="safeAreaOffsetPx" min={0} max={80} />
+          )}
+          {/* Free mode: place the whole widget anywhere on the screen, by
+              number rather than by dragging it. Stored as a fraction of the
+              viewport, so it survives a resolution change (see WidgetPosition).
+              Dragging writes the same setting — the two stay in sync. */}
+          {settings.overlayMode === 'free' && <PositionRows />}
+          {/* The collapsed pill's own footprint — separate from the expanded
+              widget, which sizes itself to its contents. Click, hover, or drag
+              all still work the same regardless of size. */}
+          <Slider label="Compact menu width" k="pillWidth" min={80} max={320} step={4} />
+          <Slider label="Compact menu height" k="pillHeight" min={20} max={64} step={2} />
+          {/* Typeface pairing for the whole app — display face and body face
+              together. See lib/fontThemes.ts for what each one resolves to. */}
+          <Choice
+            label="Font"
+            k="fontTheme"
+            options={FONT_OPTIONS}
+          />
           <Toggle label="Auto-hide widget" k="autoHideWidget" hint="Ctrl+Alt+L" />
+          {settings.autoHideWidget && (
+            <>
+              <Choice
+                label="Expand animation"
+                k="widgetExpandAnimation"
+                options={[
+                  ['genie', 'Genie'],
+                  ['scaleFade', 'Scale + fade'],
+                  ['slideUp', 'Slide up'],
+                  ['none', 'None (instant)'],
+                ]}
+              />
+              <Choice
+                label="Collapse animation"
+                k="widgetCollapseAnimation"
+                options={[
+                  ['genie', 'Genie'],
+                  ['scaleFade', 'Scale + fade'],
+                  ['slideUp', 'Slide up'],
+                  ['none', 'None (instant)'],
+                ]}
+              />
+            </>
+          )}
           {/* Applies to the widget and this window together — at 0 the controls
               float with no panel behind them at all. */}
           <Slider label="Panel opacity" k="panelOpacity" min={0} max={100} scale={100} format={pct} />
@@ -180,7 +228,7 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }): JSX.Elemen
             k="musicSource"
             options={[
               ['spotify', 'Spotify'],
-              ['appleMusic', 'Apple Music (needs setup)'],
+              ['appleMusic', 'Apple Music (coming soon)'],
             ]}
           />
           <Toggle label="Launch on startup" k="launchOnStartup" />
@@ -198,26 +246,43 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }): JSX.Elemen
   );
 }
 
-/** The one slider whose stored value can be null (null = auto, worked out from
- *  the live display size), so it can't use the plain bound Slider. */
-function TrailLengthRow(): JSX.Element {
-  const trailLengthPct = useStore((s) => s.settings.trailLengthPct);
+/** Percentage placement for Free mode — the same widgetPosition dragging
+ *  writes, so the sliders track a drag and a drag tracks the sliders. Bound
+ *  by hand rather than through <Slider>, which binds one top-level numeric
+ *  key and can't reach into the {xPct, yPct} pair. */
+function PositionRows(): JSX.Element {
+  const position = useStore((s) => s.settings.widgetPosition);
   const updateSettings = useStore((s) => s.updateSettings);
-  // The overlay window fills the active display, so this is that display's real
-  // size — the auto length scales with it rather than assuming 1080p.
-  const auto = autoTrailLengthPct(window.innerWidth, window.innerHeight);
+
+  // Before the first drag there's no stored position; show where the default
+  // placement actually puts it (centred, near the top) rather than 0,0.
+  const xPct = position?.xPct ?? 0.5;
+  const yPct = position?.yPct ?? 0;
+  const move = (next: { xPct?: number; yPct?: number }) =>
+    void updateSettings({ widgetPosition: { xPct, yPct, ...next } });
 
   return (
-    <Row label="Trail length">
-      <input
-        type="range"
-        min={5}
-        max={95}
-        value={Math.round(trailLengthPct ?? auto)}
-        onChange={(e) => updateSettings({ trailLengthPct: Number(e.target.value) })}
-      />
-      <span className="settings-hint">{trailLengthPct == null ? 'auto' : `${Math.round(trailLengthPct)}%`}</span>
-      <TextButton onClick={() => updateSettings({ trailLengthPct: null })}>Auto</TextButton>
-    </Row>
+    <>
+      <Row label="Position X">
+        <input
+          type="range"
+          min={0}
+          max={100}
+          value={Math.round(xPct * 100)}
+          onChange={(e) => move({ xPct: Number(e.target.value) / 100 })}
+        />
+        <span className="settings-hint">{pct(xPct)}</span>
+      </Row>
+      <Row label="Position Y">
+        <input
+          type="range"
+          min={0}
+          max={100}
+          value={Math.round(yPct * 100)}
+          onChange={(e) => move({ yPct: Number(e.target.value) / 100 })}
+        />
+        <span className="settings-hint">{pct(yPct)}</span>
+      </Row>
+    </>
   );
 }

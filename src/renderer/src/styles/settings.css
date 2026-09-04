@@ -1,0 +1,232 @@
+/* The settings surface: the scrolling body and its sticky section headings,
+   the row/label/control grid, the native control skins, and the color wheel
+   picker popover.
+
+   The panel shell itself is shared with the widget — see chrome.css. */
+
+/* Wider than the widget's shared 280px: the rows are label-plus-control pairs,
+   and at 280 the longer labels crowded their controls right up against the
+   scrollbar. */
+.settings-panel {
+  width: 340px;
+}
+
+/* The settings list is the one thing here that can grow without limit. Bound
+   the scrolling BODY, not the panel, so the header stays put and remains a
+   reliable drag handle. */
+.settings-body {
+  max-height: min(70vh, 620px);
+  overflow-y: auto;
+  /* Explicitly hidden, NOT left to default. Per the CSS overflow spec, giving
+     one axis a scrolling value promotes `visible` on the other axis to `auto`
+     — so overflow-y alone silently allowed a horizontal scrollbar, and that
+     bar sat across the bottom of the panel on top of the Quit button. */
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  cursor: default;
+  touch-action: auto; /* the box sets none for dragging; scrolling needs it back */
+}
+
+/* The default Chromium bar is an opaque light-grey slab of Windows UI sitting
+   inside a dark frosted panel. These rules replace it with a slim translucent
+   capsule on an invisible track, so it reads as part of the panel and only
+   asserts itself while the pointer is in the list.
+
+   NOTE: deliberately NOT combined with the standard `scrollbar-width` /
+   `scrollbar-color` properties. Chromium supports those now, and when either
+   is set it ignores these ::-webkit-scrollbar rules entirely — which is
+   exactly how the default-looking bar survived a first attempt at styling it.
+   This app only ever runs on Chromium, so the vendor-prefixed route is the
+   one that actually renders. */
+.settings-body::-webkit-scrollbar {
+  width: 10px;
+}
+.settings-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.settings-body::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.13);
+  /* A transparent border inset via background-clip leaves the capsule floating
+     clear of the panel edge rather than butting against it. */
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  transition: background 160ms ease-out;
+}
+.settings-body:hover::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.26);
+  background-clip: padding-box;
+}
+.settings-body::-webkit-scrollbar-thumb:hover,
+.settings-body::-webkit-scrollbar-thumb:active {
+  background: rgba(255, 255, 255, 0.4);
+  background-clip: padding-box;
+}
+/* No arrow buttons and no dead corner square — both are pure Windows chrome. */
+.settings-body::-webkit-scrollbar-button,
+.settings-body::-webkit-scrollbar-corner {
+  display: none;
+}
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: grab;
+}
+.settings-header .panel-title {
+  margin-bottom: 0;
+}
+.settings-close {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 18px;
+  line-height: 1;
+  padding: 0 2px;
+  cursor: pointer;
+}
+.settings-close:hover {
+  color: #fff;
+}
+.settings-window .panel-title {
+  margin-bottom: 0;
+}
+.settings-window .settings-body {
+  margin-top: 10px;
+}
+/* Group heading inside the settings list. Sticky so the heading of whatever
+   group you're scrolled into stays visible. */
+.settings-section {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 14px 0 6px;
+  padding: 4px 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.42);
+  background: inherit;
+  backdrop-filter: blur(12px);
+}
+.settings-section:first-child {
+  margin-top: 0;
+}
+.settings-hint {
+  font-size: 11px;
+  opacity: 0.45;
+  white-space: nowrap;
+}
+
+
+/* ---------- Rows and controls ---------- */
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 12px;
+}
+.settings-label {
+  color: #c9c9c9;
+}
+.settings-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.settings-control select,
+.settings-control input[type='range'] {
+  accent-color: #7c5cff;
+}
+.settings-control select {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 4px 6px;
+  font-size: 12px;
+  max-width: 150px;
+}
+/* The closed <select> can be translucent (it sits on the widget material),
+   but the open dropdown is a separate native-rendered surface — `color`
+   inherits into <option> but `background` does not, so without this the
+   options render as white text on the OS's default white popup background
+   and are invisible. Needs an explicit solid background here. */
+.settings-control select option {
+  background: #1a1a1e;
+  color: #fff;
+}
+
+/* ---------- Color wheel picker ----------
+   Replaces native <input type="color"> everywhere in Settings — see
+   ColorWheelPicker.tsx for why. The swatch button matches the native input's
+   old footprint; the popover itself is portaled to <body> and positioned
+   with fixed viewport coordinates (in JS), so it isn't part of this file's
+   normal flow — only its own rules live here. */
+.color-wheel-swatch {
+  width: 26px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.color-wheel-popover {
+  position: fixed;
+  z-index: 30; /* above the draggable boxes (20) — a transient overlay of its own */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(20, 20, 26, 0.97);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.5);
+}
+.color-wheel-wrap {
+  position: relative;
+  width: 140px;
+  height: 140px;
+}
+.color-wheel-canvas {
+  display: block;
+  border-radius: 50%;
+  cursor: crosshair;
+  touch-action: none;
+}
+.color-wheel-thumb {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
+  transform: translate(-50%, -50%);
+  pointer-events: none; /* the canvas underneath owns all pointer handling */
+}
+.color-wheel-lightness {
+  width: 140px;
+  accent-color: #7c5cff;
+}
+.color-wheel-hex {
+  font-size: 11px;
+  font-family: monospace;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+.settings-flash {
+  font-size: 11px;
+  color: #ffd27a;
+  text-align: right;
+  margin-top: -4px;
+  margin-bottom: 6px;
+}
+
+

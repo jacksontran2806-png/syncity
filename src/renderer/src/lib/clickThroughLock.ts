@@ -36,10 +36,12 @@ export function acquireClickThroughLock(): () => void {
   };
 }
 
+/** True while any holder needs click-through suppressed (i.e. mid-drag). */
 export function isClickThroughLocked(): boolean {
   return depth > 0;
 }
 
+/** Subscribes to lock transitions; returns an unsubscribe function. */
 export function onClickThroughLockChange(fn: (locked: boolean) => void): () => void {
   listeners.add(fn);
   return () => listeners.delete(fn);

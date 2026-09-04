@@ -25,7 +25,6 @@ const EMOJI_MAP: Record<string, string> = {
 
 const SIZES: WordSize[] = ['sm', 'md', 'lg', 'xl'];
 const SIZE_WEIGHTS = [0.22, 0.36, 0.28, 0.14];
-const FLAVOR_EMOJI = ['✨', '🔥', '💫', '🎶', '🌟'];
 
 function hashSeed(s: string): number {
   let h = 0;
@@ -65,6 +64,9 @@ export function pickLineEntrance(lineIndex: number, text: string): LineEntrance 
   return ENTRANCES[Math.floor(rand() * ENTRANCES.length)];
 }
 
+/** Splits a line into render-ready tokens: a stable pseudo-random size per
+ *  word, plus an emoji token after any word a keyword match applies to.
+ *  Seeded by line index + text, so a given line always renders identically. */
 export function buildDisplayTokens(lineIndex: number, text: string): DisplayToken[] {
   const words = text.split(/\s+/).filter(Boolean);
   const rand = mulberry32(hashSeed(`${lineIndex}:${text}`));
@@ -73,13 +75,16 @@ export function buildDisplayTokens(lineIndex: number, text: string): DisplayToke
   words.forEach((word, i) => {
     tokens.push({ key: `${lineIndex}-${i}`, text: word, size: pickSize(rand) });
 
+    // Fixed, modest size — emoji glyphs already render visually larger than
+    // text at the same font-size, so letting one land on the same random
+    // 'xl' roll as a word (up to 100px) made it balloon way out of
+    // proportion. No more unrelated "flavor" emoji either: one attached to a
+    // word it has nothing to do with is exactly what read as out of place —
+    // only keyword matches (word actually means something the emoji shows).
     const clean = word.toLowerCase().replace(/[^a-z]/g, '');
     const matched = EMOJI_MAP[clean];
     if (matched && rand() < 0.7) {
-      tokens.push({ key: `${lineIndex}-${i}-e`, text: matched, size: pickSize(rand), isEmoji: true });
-    } else if (rand() < 0.06) {
-      const pick = FLAVOR_EMOJI[Math.floor(rand() * FLAVOR_EMOJI.length)];
-      tokens.push({ key: `${lineIndex}-${i}-f`, text: pick, size: 'sm', isEmoji: true });
+      tokens.push({ key: `${lineIndex}-${i}-e`, text: matched, size: 'sm', isEmoji: true });
     }
   });
 

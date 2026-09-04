@@ -15,7 +15,7 @@
   position: relative;
   width: min(60vh, 60vw);
   height: min(60vh, 60vw);
-  z-index: 10; /* above the glow ring (5) — see .glow-root */
+  z-index: 10; /* above the full-bleed backdrop (1) */
 }
 .album-slide {
   position: absolute;
@@ -52,12 +52,15 @@
   background: linear-gradient(135deg, rgba(124, 92, 255, 0.5), rgba(79, 172, 254, 0.5));
 }
 .album-title {
+  font-family: var(--font-display, 'Clash Display', sans-serif);
   font-size: 22px;
   font-weight: 700;
+  letter-spacing: -0.03em;
   text-align: center;
 }
 .album-artist {
   font-size: 15px;
+  font-weight: 400;
   color: #9a9a9a;
   text-align: center;
 }
@@ -75,7 +78,18 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 999px;
   padding: 10px 26px;
-  z-index: 10; /* above the glow ring (5) — see .glow-root */
+  z-index: 10; /* above the full-bleed backdrop (1) */
+}
+
+/* A flat user-chosen color behind Album mode, independent of the full-bleed
+   art backdrop below — sits at the same layer so full-bleed art (when also
+   on) paints over it, and it alone covers the screen when full-bleed is off. */
+.album-backdrop-custom {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1; /* below the foreground stage (10) */
+  transition: background 400ms linear;
 }
 
 /* ---------- Full-bleed album art backdrop (Album mode + Lyrics) ---------- */
@@ -85,7 +99,7 @@
   inset: 0;
   overflow: hidden;
   pointer-events: none;
-  z-index: 1; /* below .glow-root (5) — see the comment there */
+  z-index: 1; /* below the foreground stage (10) */
 }
 .album-backdrop-layer {
   position: absolute;

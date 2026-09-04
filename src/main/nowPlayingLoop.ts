@@ -1,16 +1,21 @@
 // The now-playing poll and everything that hangs off a track change.
 //
-// Split out of index.ts because it owns real state — the poll timer, the last
-// seen track, the last known repeat state — and index.ts was carrying it purely
-// because that's where it was first written. Nothing outside this file touches
-// that state; callers get an explicit handle instead.
+// Split out of index.ts because it owns real state — the poll timer and the
+// last seen track — and index.ts was carrying it purely because that's where
+// it was first written. Nothing outside this file touches that state; callers
+// get an explicit handle instead.
 
-import type { NowPlaying, RepeatState } from '../shared/types';
+import type { NowPlaying } from '../shared/types';
 import type { NowPlayingProvider } from './providers/types';
 import { fetchSyncedLyrics } from './lyrics';
-import { extractGlowPalette } from './color';
+import { extractAlbumPalette } from './color';
 
 const POLL_MS = 2000;
+
+/** Ceiling on the half-round-trip added to a reported position. Past this the
+ *  request was slow enough that the measurement says nothing dependable about
+ *  where playback is. */
+const MAX_LATENCY_CORRECTION_MS = 1500;
 
 export interface LoopDeps {
   /** Resolved per call, not captured: the user can switch music source at any
@@ -29,14 +34,13 @@ export interface NowPlayingLoop {
   /** Forget the current track so the next tick re-runs the track-change work
    *  (palette extraction, lyrics fetch). */
   forgetTrack: () => void;
-  getRepeatState: () => RepeatState;
-  setRepeatState: (state: RepeatState) => void;
 }
 
+/** Builds the poll loop. Nothing runs until start(); the returned handle owns
+ *  the timer, so callers never touch it directly. */
 export function createNowPlayingLoop({ provider, colorOverrideEnabled, send }: LoopDeps): NowPlayingLoop {
   let timer: ReturnType<typeof setInterval> | null = null;
   let lastTrackId: string | null | undefined = null;
-  let repeatState: RepeatState = 'off';
 
   /** Palette + lyrics for a newly started track. Both are fire-and-forget: a
    *  failure in either must not stop playback updates. */
@@ -45,8 +49,8 @@ export function createNowPlayingLoop({ provider, colorOverrideEnabled, send }: L
     send('lyrics:update', null);
 
     if (np.artUrl && !colorOverrideEnabled()) {
-      extractGlowPalette(np.artUrl)
-        .then((palette) => send('glow:palette', palette))
+      extractAlbumPalette(np.artUrl)
+        .then((palette) => send('palette:update', palette))
         .catch((err) => console.error('[color] extraction failed:', err.message));
     }
 
@@ -56,6 +60,10 @@ export function createNowPlayingLoop({ provider, colorOverrideEnabled, send }: L
       primaryArtist: np.primaryArtist,
       album: np.album,
       durationMs: np.durationMs,
+      // Cache key: a replay of the same track, or a re-run of this work after
+      // a palette-override toggle, reuses the first lookup instead of hitting
+      // LRCLIB again.
+      trackId: np.trackId,
     })
       .then((lines) => {
         // The track may have changed again while this was in flight — dropping
@@ -68,17 +76,23 @@ export function createNowPlayingLoop({ provider, colorOverrideEnabled, send }: L
 
   async function tick(): Promise<void> {
     if (!provider().isAuthed()) {
-      send('now-playing:update', { connected: false } satisfies NowPlaying);
+      send('nowPlaying:update', { connected: false } satisfies NowPlaying);
       return;
     }
 
     let np;
+    // Measured per poll, never assumed: the position Spotify reports was true
+    // when IT read the clock, and the answer then spent the trip home getting
+    // here. Half the round trip is the standard estimate of that one-way leg.
+    // A hardcoded constant would be wrong on every network but the one it was
+    // tuned on, and wrong again on that one whenever it hiccups.
+    const sentAt = Date.now();
     try {
       np = await provider().getCurrentlyPlaying();
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       const authFailed = message === 'unauthorized';
-      send('now-playing:update', {
+      send('nowPlaying:update', {
         connected: !authFailed,
         playing: false,
         error: message,
@@ -88,27 +102,35 @@ export function createNowPlayingLoop({ provider, colorOverrideEnabled, send }: L
 
     if (!np || !np.isPlaying) {
       lastTrackId = null;
-      send('now-playing:update', { connected: true, playing: false } satisfies NowPlaying);
+      send('nowPlaying:update', { connected: true, playing: false } satisfies NowPlaying);
       return;
     }
 
-    if (np.repeatState) repeatState = np.repeatState;
+    const receivedAt = Date.now();
+    // Clamped because the correction is only a good estimate while the trip is
+    // symmetric and short. A multi-second round trip (a stall, a sleeping
+    // laptop waking mid-request) says nothing useful about where the track is,
+    // and half of it would be a large confident fudge in the wrong direction.
+    const oneWayMs = Math.min(MAX_LATENCY_CORRECTION_MS, Math.max(0, Math.round((receivedAt - sentAt) / 2)));
 
-    send('now-playing:update', {
+    send('nowPlaying:update', {
       connected: true,
       playing: true,
       title: np.title,
       artist: np.artist,
       album: np.album,
       artUrl: np.artUrl,
-      progressMs: np.progressMs,
+      // Advanced by the trip home: the track kept playing while the answer was
+      // in flight. Only when it's actually playing — a paused position doesn't
+      // move, so "correcting" it would just introduce error.
+      progressMs: (np.progressMs ?? 0) + oneWayMs,
       durationMs: np.durationMs,
       trackId: np.trackId,
-      repeatState: np.repeatState,
       shuffle: np.shuffle,
       // Stamped after the await, so the renderer's extrapolation starts from
       // when the value actually arrived rather than when it was requested.
-      receivedAt: Date.now(),
+      receivedAt,
+      pollLatencyMs: receivedAt - sentAt,
     } satisfies NowPlaying);
 
     if (np.trackId !== lastTrackId) onTrackChanged(np);
@@ -127,10 +149,6 @@ export function createNowPlayingLoop({ provider, colorOverrideEnabled, send }: L
     },
     forgetTrack() {
       lastTrackId = null;
-    },
-    getRepeatState: () => repeatState,
-    setRepeatState: (state) => {
-      repeatState = state;
     },
   };
 }

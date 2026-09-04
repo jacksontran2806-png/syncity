@@ -1,9 +1,9 @@
-import { placeBox, resolvePosition, SNAP_PX } from '../src/renderer/src/components/dragMath';
+import { placeBox, resolvePosition, SNAP_PX } from '../src/renderer/src/lib/dragMath';
 import {
   acquireClickThroughLock,
   isClickThroughLocked,
   onClickThroughLockChange,
-} from '../src/renderer/src/clickThroughLock';
+} from '../src/renderer/src/lib/clickThroughLock';
 import { check, done } from './assert';
 
 

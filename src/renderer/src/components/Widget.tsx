@@ -19,7 +19,13 @@ export function Widget(): JSX.Element {
   const togglePanel = useStore((s) => s.togglePanel);
   const setViewMode = useStore((s) => s.setViewMode);
   const connectSpotify = useStore((s) => s.connectSpotify);
+  // Moves the playback anchor the instant it's clicked, so the lyric
+  // highlight freezes/resumes on the click rather than on the next poll.
+  const setPlaying = useStore((s) => s.setPlaying);
 
+  const expandAnim = useStore((s) => s.settings.widgetExpandAnimation);
+  const widgetLocked = useStore((s) => s.settings.widgetLocked);
+  const updateSettings = useStore((s) => s.updateSettings);
   const [flash, setFlash] = useState('');
   const [connecting, setConnecting] = useState(false);
   const flashTimer = useRef<ReturnType<typeof setTimeout>>();
@@ -45,7 +51,7 @@ export function Widget(): JSX.Element {
 
   if (!spotifyStatus.authed) {
     return (
-      <div className="widget" data-hitregion>
+      <div className={`widget widget-anim-${expandAnim}-expand`} data-hitregion>
         <div className="widget-connect">
           <span>LyriGlow</span>
           <button
@@ -72,7 +78,7 @@ export function Widget(): JSX.Element {
   const playing = !!nowPlaying.playing;
 
   return (
-    <div className="widget" data-hitregion>
+    <div className={`widget widget-anim-${expandAnim}-expand`} data-hitregion>
       <div className="widget-track-stage">
         {trackLayers.map((layer) => {
           const np = layer.value;
@@ -96,7 +102,7 @@ export function Widget(): JSX.Element {
         <IconButton title="Previous" size="lg" onClick={() => guarded(() => window.lyriglow.skipPrevious())}>
           ⏮
         </IconButton>
-        <IconButton title={playing ? 'Pause' : 'Play'} size="lg" onClick={() => guarded(() => window.lyriglow.playPause(!playing))}>
+        <IconButton title={playing ? 'Pause' : 'Play'} size="lg" onClick={() => guarded(() => setPlaying(!playing))}>
           {playing ? '⏸' : '▶'}
         </IconButton>
         <IconButton title="Skip" size="lg" onClick={() => guarded(() => window.lyriglow.skipNext())}>
@@ -120,12 +126,16 @@ export function Widget(): JSX.Element {
         >
           ⤨
         </IconButton>
+        {/* Pins the widget expanded, bypassing auto-hide — for anyone who
+            just wants the full menu and never wants to think about the
+            pill. Lives here, not in Settings, since it's meant to be the
+            immediate way out of auto-hide, not a buried preference. */}
         <IconButton
-          title="Repeat"
-          active={nowPlaying.repeatState !== 'off' && !!nowPlaying.repeatState}
-          onClick={() => guarded(() => window.lyriglow.toggleRepeat())}
+          title={widgetLocked ? 'Unlock (auto-hide resumes)' : 'Lock expanded'}
+          active={widgetLocked}
+          onClick={() => updateSettings({ widgetLocked: !widgetLocked })}
         >
-          ⟲
+          {widgetLocked ? '🔒' : '🔓'}
         </IconButton>
         {/* No close button by design — Escape dismisses the overlay (see
             useEscapeDismiss), and the tray owns Show/Hide and Quit. */}

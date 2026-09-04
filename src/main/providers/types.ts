@@ -1,4 +1,4 @@
-import type { NowPlaying, RepeatState } from '../../shared/types';
+import type { NowPlaying } from '../../shared/types';
 
 export type ProviderTrack =
   | (Omit<NowPlaying, 'connected' | 'playing'> & {
@@ -8,7 +8,7 @@ export type ProviderTrack =
     })
   | null;
 
-/** Everything the glow/widget/lyrics code needs from a music source. Nothing
+/** Everything the widget/lyrics/palette code needs from a music source. Nothing
  *  above this line knows whether it's talking to Spotify or Apple Music —
  *  SpotifyClient already satisfies this shape structurally. */
 export interface NowPlayingProvider {
@@ -22,6 +22,5 @@ export interface NowPlayingProvider {
   skipNext(): Promise<void>;
   skipPrevious(): Promise<void>;
   playPause(play: boolean): Promise<void>;
-  setRepeat(state: RepeatState): Promise<void>;
   setShuffle(enabled: boolean): Promise<void>;
 }

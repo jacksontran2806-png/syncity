@@ -15,7 +15,6 @@ export function createSpotifyProvider(clientId: string | undefined, redirectUri:
     skipNext: () => client.skipNext(),
     skipPrevious: () => client.skipPrevious(),
     playPause: (play) => client.playPause(play),
-    setRepeat: (state) => client.setRepeat(state),
     setShuffle: (enabled) => client.setShuffle(enabled),
   };
 }

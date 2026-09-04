@@ -3,9 +3,12 @@
    Import order is cascade order: base first, then everything else, which are
    disjoint by class name and so order-independent among themselves. */
 
-@import './styles/base.css';
-@import './styles/glow.css';
-@import './styles/chrome.css';
-@import './styles/fullscreen.css';
-@import './styles/album.css';
-@import './styles/lyrics.css';
+@import './fonts.css';
+@import './base.css';
+@import './chrome.css';
+@import './widget.css';
+@import './settings.css';
+@import './fullscreen.css';
+@import './album.css';
+@import './lyrics.css';
+@import './lyricStyles.css';

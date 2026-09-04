@@ -4,6 +4,8 @@ import { getOverlayWindow } from './windows';
 
 let tray: Tray | null = null;
 
+/** Builds the tray icon and its menu. The app has no taskbar presence, so this
+ *  is the only always-available way to show/hide the overlay or quit. */
 export function createTray(onOpenSettings: () => void): Tray {
   const iconPath = path.join(__dirname, '../../resources/tray-icon.png');
   const icon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });

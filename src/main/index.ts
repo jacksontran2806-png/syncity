@@ -18,7 +18,7 @@ import { createAppleMusicProvider } from './providers/appleMusic';
 import { loadSettings, saveSettings } from './settingsStore';
 import { createNowPlayingLoop } from './nowPlayingLoop';
 import { registerIpc } from './ipc';
-import { registerHotkeys, unregisterHotkeys } from './hotkeys';
+import { registerHotkeys, setEscapeCapture, unregisterHotkeys } from './hotkeys';
 import { applyWindowMode, createOverlayWindow, getOverlayWindow, watchDisplayChanges, moveOverlayToDisplay } from './windows';
 import { createTray } from './tray';
 import { registerCrashDiagnostics } from './crashDiagnostics';
@@ -80,7 +80,7 @@ function patchSettings(partial: Partial<AppSettings>): AppSettings {
 
   if ('colorOverrideEnabled' in partial || 'overridePrimary' in partial || 'overrideSecondary' in partial) {
     if (settings.colorOverrideEnabled) {
-      send('glow:palette', {
+      send('palette:update', {
         primary: settings.overridePrimary,
         secondary: settings.overrideSecondary,
         tertiary: settings.overrideSecondary,
@@ -99,7 +99,7 @@ function patchSettings(partial: Partial<AppSettings>): AppSettings {
   return settings;
 }
 
-/** Loopback audio capture for the reactive glow modes, without a screen-picker
+/** Loopback audio capture for the pill's spectrum visualizer, without a screen-picker
  *  dialog. Windows only — see audio.ts. */
 function enableSystemAudioCapture(): void {
   try {
@@ -123,14 +123,21 @@ app.whenReady().then(() => {
 
   enableSystemAudioCapture();
   createOverlayWindow(settings.displayId, settings.windowMode);
-  createTray(() => send('ui:open-settings'));
+  createTray(() => send('ui:openSettings'));
 
   // Backstop for the crash class the disable-features switch above targets —
   // logs it if it still happens, and rebuilds the window instead of leaving
   // the whole app gone.
   registerCrashDiagnostics(getOverlayWindow, () => createOverlayWindow(settings.displayId, settings.windowMode));
 
-  registerIpc({ getSettings: () => settings, patchSettings, provider, loop, clientIdConfigured: !!CLIENT_ID });
+  registerIpc({
+    getSettings: () => settings,
+    patchSettings,
+    provider,
+    loop,
+    clientIdConfigured: !!CLIENT_ID,
+    setFullscreenView: (active) => setEscapeCapture(active, () => send('ui:escape')),
+  });
   registerHotkeys({ getSettings: () => settings, patchSettings, send });
   loop.start();
 

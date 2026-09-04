@@ -1,5 +1,6 @@
 import { useStore } from '../store';
 import { useSlideTransition } from '../hooks/useSlideTransition';
+import { rgbaCss, rgbCss } from '../lib/colorUtils';
 import { AlbumBackdrop } from './AlbumBackdrop';
 import { IconButton } from './IconButton';
 
@@ -8,9 +9,17 @@ export function AlbumFullscreen(): JSX.Element {
   const palette = useStore((s) => s.palette);
   const setViewMode = useStore((s) => s.setViewMode);
   const albumFullBleed = useStore((s) => s.settings.albumFullBleed);
+  const customBgEnabled = useStore((s) => s.settings.albumCustomBgEnabled);
+  const customColor = useStore((s) => s.settings.albumCustomColor);
+  // See Widget.tsx: anchors the clock locally instead of waiting for a poll.
+  const setPlaying = useStore((s) => s.setPlaying);
 
   const layers = useSlideTransition(nowPlaying, nowPlaying.trackId ?? 'none', 500);
-  const glowColor = `rgb(${palette.primary.r}, ${palette.primary.g}, ${palette.primary.b})`;
+  /** Soft bloom behind the cover, in the album's own dominant colour. 0.27
+   *  matches the 0x44 alpha this was written with before — it was appended to
+   *  an rgb() string, which isn't a valid colour, so the shadow never drew. */
+  const bloomColor = rgbaCss(palette.primary, 0.27);
+  const customBg = rgbCss(customColor);
 
   const guarded = async (fn: () => Promise<unknown>) => {
     try {
@@ -23,6 +32,7 @@ export function AlbumFullscreen(): JSX.Element {
 
   return (
     <div className="album-fullscreen">
+      {customBgEnabled && <div className="album-backdrop-custom" style={{ background: customBg }} />}
       {albumFullBleed && <AlbumBackdrop />}
 
       <div className="fullscreen-back">
@@ -41,7 +51,7 @@ export function AlbumFullscreen(): JSX.Element {
                   className="album-art-big"
                   src={np.artUrl}
                   alt=""
-                  style={{ boxShadow: `0 0 100px 10px ${glowColor}44` }}
+                  style={{ boxShadow: `0 0 100px 10px ${bloomColor}` }}
                 />
               ) : (
                 <div className="album-art-big album-art-big-placeholder" />
@@ -60,7 +70,7 @@ export function AlbumFullscreen(): JSX.Element {
         <IconButton
           title={nowPlaying.playing ? 'Pause' : 'Play'}
           size="lg"
-          onClick={() => guarded(() => window.lyriglow.playPause(!nowPlaying.playing))}
+          onClick={() => guarded(() => setPlaying(!nowPlaying.playing))}
         >
           {nowPlaying.playing ? '⏸' : '▶'}
         </IconButton>

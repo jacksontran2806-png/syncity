@@ -24,6 +24,8 @@ function bind(accelerator: string, fn: () => void): void {
   }
 }
 
+/** Binds the app-lifetime global shortcuts. A combo already owned by another
+ *  app is logged and skipped, never thrown — see bind(). */
 export function registerHotkeys({ getSettings, patchSettings, send }: HotkeyContext): void {
   bind('Control+Alt+F', () => {
     const windowMode = getSettings().windowMode === 'fullscreen' ? 'windowed' : 'fullscreen';
@@ -35,10 +37,35 @@ export function registerHotkeys({ getSettings, patchSettings, send }: HotkeyCont
   // brings the overlay back if Escape dismissed it.
   bind('Control+Alt+L', () => {
     setOverlayVisible(true);
-    send('ui:expand-widget');
+    send('ui:expandWidget');
   });
 }
 
+/**
+ * Escape, bound globally but ONLY while a fullscreen view (Album/Lyrics) is on
+ * screen.
+ *
+ * WHY IT HAS TO BE A GLOBAL ACCELERATOR: the overlay is click-through
+ * (setIgnoreMouseEvents(true, {forward:true})) and is only ever shown with
+ * showInactive(), so it never takes focus — and an unfocused window receives no
+ * key events at all. The renderer's own window keydown listener therefore never
+ * fired, which is exactly why Escape "did nothing" in Lyrics mode.
+ *
+ * WHY IT'S SCOPED RATHER THAN ALWAYS ON: a global Escape swallows the key for
+ * every other app on the machine. That's only defensible while this overlay is
+ * covering the whole screen and Escape means "back out of it". In island mode
+ * the key belongs to whatever the user is actually working in, so the binding
+ * is released the moment the fullscreen view closes.
+ */
+export function setEscapeCapture(enabled: boolean, onEscape: () => void): void {
+  const bound = globalShortcut.isRegistered('Escape');
+  if (enabled === bound) return;
+  if (enabled) bind('Escape', onEscape);
+  else globalShortcut.unregister('Escape');
+}
+
+/** Releases every global shortcut, including a live Escape capture. Bound to
+ *  app will-quit so nothing outlives the process. */
 export function unregisterHotkeys(): void {
   globalShortcut.unregisterAll();
 }

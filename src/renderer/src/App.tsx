@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useStore } from './store';
 import { useClickThrough } from './hooks/useClickThrough';
-import { startBassEnvelope, type AudioReactiveHandle } from './audio';
-import { GlowLayer } from './components/GlowLayer';
+import { startSpectrumBars, type AudioReactiveHandle } from './lib/audio';
+import { fontThemeSpec } from './lib/fontThemes';
 import { WidgetDock } from './components/WidgetDock';
 import { SettingsWindow } from './components/SettingsWindow';
 import { AlbumFullscreen } from './components/AlbumFullscreen';
@@ -14,7 +14,7 @@ export function App(): JSX.Element {
   const setNowPlaying = useStore((s) => s.setNowPlaying);
   const setLyrics = useStore((s) => s.setLyrics);
   const setPalette = useStore((s) => s.setPalette);
-  const setAudioLevel = useStore((s) => s.setAudioLevel);
+  const setAudioBars = useStore((s) => s.setAudioBars);
   const setPanel = useStore((s) => s.setPanel);
   const setViewMode = useStore((s) => s.setViewMode);
   const refreshSpotifyStatus = useStore((s) => s.refreshSpotifyStatus);
@@ -71,46 +71,59 @@ export function App(): JSX.Element {
   // fullscreen view -> widget, open panel -> closed, then hides the overlay.
   // Hiding rather than quitting: it's recoverable from the tray or Ctrl+Alt+L,
   // and Escape killing the app outright would be a nasty surprise.
+  //
+  // Two sources, one cascade. The keydown listener only ever fires when this
+  // window happens to hold focus, which for a click-through overlay is almost
+  // never — that's why Escape did nothing in Lyrics/Album mode. Main binds a
+  // global Escape while a fullscreen view is up and sends 'ui:escape' here
+  // (see hotkeys.ts setEscapeCapture).
   useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
+    const stepBack = () => {
       const { viewMode: vm, panel: p } = useStore.getState();
       if (vm !== 'island') setViewMode('island');
       else if (p !== 'none') setPanel('none');
       else window.lyriglow.hideOverlay();
     };
+    const onKeyDown = (e: KeyboardEvent) => {
+      // e.repeat: OS key-repeat re-fires keydown for a held key. Without this
+      // guard a single held Escape can walk the cascade more than one step
+      // (view -> island -> panel closed -> hide) instead of just one.
+      if (e.key !== 'Escape' || e.repeat) return;
+      stepBack();
+    };
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    const offEscape = window.lyriglow.onEscape(stepBack);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      offEscape();
+    };
   }, [setViewMode, setPanel]);
 
-  // Trail and Aura both drive the glow off real system-audio loudness
-  // (see audio.ts) — only running the capture while it's needed.
-  //
-  // Depends on the boolean, not the raw mode string: startBassEnvelope() opens
-  // a fresh AudioContext + getDisplayMedia() capture every time it's called,
-  // which is expensive and briefly interrupts the audio-reactive glow. Keying
-  // this effect on settings.animationMode directly meant switching
-  // Trail -> Aura while tuning settings tore the capture down and
-  // renegotiated it on every single switch, for no reason — none of those
-  // transitions need audio to stop. Only a transition to/from 'none' does.
-  const audioNeeded = settings.animationMode !== 'none';
+  // Main only holds the global Escape binding while a fullscreen view is
+  // actually up, so it isn't swallowing the key from every other app the rest
+  // of the time.
   useEffect(() => {
-    if (!audioNeeded) {
-      setAudioLevel(0);
-      return;
-    }
+    window.lyriglow.setFullscreenView(viewMode !== 'island');
+  }, [viewMode]);
+
+  // Runs for the app's whole lifetime, not gated on any mode or view — the
+  // widget pill's spectrum visualizer can be on screen any time, so capture
+  // just stays up in the background rather than starting/stopping around
+  // whatever else is happening. See audio.ts for why this is cheap: the
+  // decimation and smoothing happen there, so only a small settled array
+  // crosses into the store each frame, not the raw analyser buffer.
+  useEffect(() => {
     let handle: AudioReactiveHandle | null = null;
     let cancelled = false;
-    startBassEnvelope((level) => setAudioLevel(level)).then((h) => {
+    startSpectrumBars((bars) => setAudioBars(bars)).then((h) => {
       if (cancelled) h?.stop();
       else handle = h;
     });
     return () => {
       cancelled = true;
       handle?.stop();
-      setAudioLevel(0);
     };
-  }, [audioNeeded, setAudioLevel]);
+  }, [setAudioBars]);
 
   return (
     // One variable, set once at the root: every piece of app chrome derives its
@@ -118,9 +131,17 @@ export function App(): JSX.Element {
     // disagree about how solid the app is meant to look.
     <div
       className="overlay-root"
-      style={{ '--panel-opacity': settings.panelOpacity } as React.CSSProperties}
+      style={{
+        '--panel-opacity': settings.panelOpacity,
+        '--pill-width': `${settings.pillWidth}px`,
+        '--pill-height': `${settings.pillHeight}px`,
+        // Every sheet reads these rather than naming a family directly, so one
+        // setting re-skins the whole app. GiantWordStage reads the same values
+        // back off the DOM for its canvas measurement — see fontThemes.ts.
+        '--font-display': fontThemeSpec(settings.fontTheme).display,
+        '--font-body': fontThemeSpec(settings.fontTheme).body,
+      } as React.CSSProperties}
     >
-      <GlowLayer />
       {viewMode === 'island' && <WidgetDock expandSignal={expandSignal} />}
       {/* Peer of the widget, not a child of it — its own box, own position. */}
       {viewMode === 'island' && panel === 'settings' && <SettingsWindow />}

@@ -1,0 +1,261 @@
+/* Per-style lyric treatments: the five lyricStyle options and the shared
+   word/line rendering they build on (entrance animations, word sizing,
+   the breathe loop), plus Giant Word's own single-word layout.
+
+   The view around them — backdrop, indicators, sync bar — is in lyrics.css. */
+
+/* ---------- Lyric styles ---------- */
+
+/* Active line always breathes, even between word highlights, so it never
+   sits dead-still on screen. It's a wrapper rather than the line itself so
+   the breathe transform composes with the line's entrance transform instead
+   of one animation clobbering the other. */
+.lyrics-breathe {
+  animation: lyrics-breathe 3s ease-in-out infinite;
+}
+@keyframes lyrics-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+/* Karaoke Fill / Bounce: no per-word "sung now" tracking any more — LRCLIB
+   only has line-level timestamps, so a word-by-word highlight was always a
+   guess dressed up as sync, and it read as visibly wrong often enough to cut.
+   The line just appears (each word popping in on entrance, see .lyrics-word)
+   — these two styles are kept for their line-level treatment elsewhere
+   (entrance variety, sizing) rather than a word-tracking gimmick. */
+
+/* Blur Focus is now a sliding stage (see .lyrics-slide-stage below) — this is
+   Stacked Fade only. */
+.lyrics-stage-stackedFade {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+.lyrics-stack-row {
+  text-align: center;
+  font-size: 36px;
+  font-weight: 500;
+  max-width: 78vw;
+  transition: opacity 400ms ease-out, filter 400ms ease-out, transform 400ms ease-out;
+}
+.lyrics-stack-row.is-active {
+  font-size: inherit;
+}
+/* Stacked Fade: sung lines drift up and shrink away, active line centered. */
+.lyrics-stack-stackedFade {
+  transform-origin: center;
+}
+
+/* ---------- Blur Focus: sliding stage ----------
+   Rows are absolutely positioned and keyed by absolute line index (see
+   LyricStage), so the same DOM node carries a line as it moves from
+   "upcoming" to "active" to "sung" — that's what lets the transform
+   transition actually animate a slide, instead of a line popping into a new
+   flex slot with no motion between the two positions. */
+.lyrics-slide-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 10; /* above the full-bleed backdrop (1) */
+}
+.lyrics-slide-row {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(1100px, 78vw);
+  text-align: center;
+  font-size: 36px;
+  font-weight: 500;
+  transition: transform 450ms cubic-bezier(0.22, 1, 0.36, 1), opacity 400ms ease-out, filter 400ms ease-out;
+}
+.lyrics-slide-row.is-active {
+  font-size: inherit;
+}
+
+/* Centered block, held to ~65% of the screen so long lines wrap into a
+   composed paragraph instead of stretching edge to edge. */
+.lyrics-stage {
+  min-height: 220px;
+  width: min(1100px, 65vw);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.5;
+  gap: 18px;
+  /* position:relative purely to make z-index apply. 10 = above the
+     full-bleed backdrop (1). */
+  position: relative;
+  z-index: 10;
+}
+
+/* Apple Music's own lyrics view runs on SF Pro, which is Apple's proprietary
+   font — it isn't licensed for use outside Apple's own platforms/apps, so it
+   can't be bundled here. General Sans (already the app's body font, see
+   base.css) is a geometric humanist sans in the same register and is the
+   closest legally-usable match. Set explicitly here rather than relying on
+   inheritance, so it can't be silently overridden by something upstream. */
+.lyrics-active-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.32em 0.5em;
+  max-width: min(1100px, 88vw);
+  font-family: var(--font-body, 'General Sans', -apple-system, 'Segoe UI', sans-serif);
+  font-weight: 800;
+}
+/* One of these is picked per-line (seeded, see lyricsDisplay.ts) so lines
+   don't all arrive the same way — matches the "creative, varied" ask
+   instead of one repeated entrance animation. */
+.lyrics-active-line-slide-left {
+  animation: line-slide-left 550ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.lyrics-active-line-slide-right {
+  animation: line-slide-right 550ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.lyrics-active-line-slide-up {
+  animation: line-slide-up 550ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.lyrics-active-line-magic {
+  animation: line-magic 650ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes line-slide-left {
+  from {
+    opacity: 0;
+    transform: translateX(-70px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes line-slide-right {
+  from {
+    opacity: 0;
+    transform: translateX(70px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes line-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(60px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes line-magic {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+    filter: blur(14px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+.lyrics-word {
+  display: inline-block;
+  font-weight: 800;
+  line-height: 1.15;
+  opacity: 0;
+  transform: translateY(10px) scale(0.85);
+  animation: word-pop 420ms cubic-bezier(0.2, 0.9, 0.3, 1.3) forwards;
+}
+/* ~1.5x the earlier sizes: the active line is the focal point of the view.
+   Context lines (.lyrics-stack-row, .lyrics-next-line) deliberately stay
+   small and light — the size gap is the hierarchy. */
+.lyrics-word-sm {
+  font-size: 33px;
+  font-weight: 600;
+  opacity: 0.8;
+  animation-name: word-pop-sm;
+}
+.lyrics-word-md {
+  font-size: 49px;
+}
+.lyrics-word-lg {
+  font-size: 72px;
+}
+.lyrics-word-xl {
+  font-size: 100px;
+}
+.lyrics-word-emoji {
+  font-weight: 400;
+}
+@keyframes word-pop {
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes word-pop-sm {
+  to {
+    opacity: 0.8;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.lyrics-next-line {
+  font-size: 20px;
+  opacity: 0.35;
+  transition: opacity 300ms ease-out;
+}
+
+
+/* ---------- Giant Word ----------
+   One word dominates the screen; the previous/next words peek small above
+   and below. Each word is a single DOM node (keyed by its absolute position
+   in the whole-song timeline — see GiantWordStage) that cycles through these
+   three roles as playback advances, so the transition below animates a role
+   change on one persistent element rather than a cut between elements. */
+.giant-word-stage {
+  position: fixed;
+  inset: 0;
+  perspective: 1400px;
+  z-index: 10; /* above the full-bleed backdrop (1) */
+}
+.giant-word {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  white-space: nowrap;
+  font-family: var(--font-display, 'Clash Display', -apple-system, 'Segoe UI', sans-serif);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  transition: transform 450ms cubic-bezier(0.22, 1, 0.36, 1), opacity 450ms ease-out, font-size 450ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+/* incoming/outgoing stay visible (small, faint, tilted) rather than fading to
+   nothing — the point is a persistent 3-word stack (upcoming below, current
+   centered, most-recent above), not a solo word that briefly reveals its
+   neighbors mid-transition. */
+.giant-word--incoming {
+  transform: translate(-50%, calc(-50% + 22vh)) rotateX(-50deg);
+  opacity: 0.4;
+}
+.giant-word--current {
+  transform: translate(-50%, -50%) rotateX(0deg);
+  opacity: 1;
+}
+.giant-word--outgoing {
+  transform: translate(-50%, calc(-50% - 22vh)) rotateX(50deg);
+  opacity: 0.4;
+}
+

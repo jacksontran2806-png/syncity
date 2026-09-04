@@ -2,18 +2,17 @@
 //
 // CAUTION: /v1/audio-features and /v1/audio-analysis are blocked for any app
 // registered after 2024-11-27 (confirmed against Spotify's own changelog) —
-// that's why the reactive glow modes use live audio capture instead of
+// that's why the pill's spectrum visualizer uses live audio capture instead of
 // Spotify's precomputed beat grid.
 
 import { SpotifyAuth } from './auth';
-import type { NowPlaying, RepeatState } from '../../shared/types';
+import type { NowPlaying } from '../../shared/types';
 
 const API = 'https://api.spotify.com/v1';
 
 interface SpotifyPlayerResponse {
   is_playing: boolean;
   progress_ms: number;
-  repeat_state: string;
   shuffle_state: boolean;
   item: {
     id: string;
@@ -47,7 +46,7 @@ export class SpotifyClient {
 
   /** Returns null when nothing is playing / paused / no active device — it
    *  never throws for those. Uses /me/player rather than /currently-playing
-   *  because repeat_state and shuffle_state are needed too. */
+   *  because shuffle_state is needed too. */
   async getCurrentlyPlaying(): Promise<CurrentTrack | null> {
     const resp = await fetch(`${API}/me/player`, {
       headers: { Authorization: `Bearer ${await this.auth.accessToken()}` },
@@ -70,7 +69,6 @@ export class SpotifyClient {
       primaryArtist: artists[0]?.name ?? null,
       album: data.item.album?.name,
       artUrl: data.item.album?.images?.[0]?.url ?? null,
-      repeatState: data.repeat_state as RepeatState,
       shuffle: !!data.shuffle_state,
     };
   }
@@ -91,7 +89,5 @@ export class SpotifyClient {
   skipNext = (): Promise<void> => this.command('POST', 'next');
   skipPrevious = (): Promise<void> => this.command('POST', 'previous');
   playPause = (play: boolean): Promise<void> => this.command('PUT', play ? 'play' : 'pause');
-  /** Caller cycles the classic Spotify order: off -> context -> track -> off. */
-  setRepeat = (state: RepeatState): Promise<void> => this.command('PUT', `repeat?state=${state}`);
   setShuffle = (enabled: boolean): Promise<void> => this.command('PUT', `shuffle?state=${enabled}`);
 }

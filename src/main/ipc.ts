@@ -5,7 +5,7 @@
 // it's this interface, and nothing else.
 
 import { app, ipcMain, screen } from 'electron';
-import type { AppSettings, RepeatState } from '../shared/types';
+import type { AppSettings } from '../shared/types';
 import type { NowPlayingProvider } from './providers/types';
 import type { NowPlayingLoop } from './nowPlayingLoop';
 import {
@@ -19,8 +19,6 @@ import {
  *  provider to have applied it, short enough to feel immediate. */
 const AFTER_COMMAND_MS = 350;
 
-const REPEAT_CYCLE: RepeatState[] = ['off', 'context', 'track'];
-
 export interface IpcContext {
   getSettings: () => AppSettings;
   /** Merges, persists, and runs any side effects the changed keys imply. */
@@ -28,8 +26,12 @@ export interface IpcContext {
   provider: () => NowPlayingProvider;
   loop: NowPlayingLoop;
   clientIdConfigured: boolean;
+  /** Binds/releases the global Escape accelerator as fullscreen views open
+   *  and close — see hotkeys.ts setEscapeCapture for why it's scoped. */
+  setFullscreenView: (active: boolean) => void;
 }
 
+/** Registers every ipcMain handler. Call once, after the window exists. */
 export function registerIpc(ctx: IpcContext): void {
   const { getSettings, patchSettings, provider, loop } = ctx;
   const repoll = () => setTimeout(() => void loop.tick(), AFTER_COMMAND_MS);
@@ -56,6 +58,7 @@ export function registerIpc(ctx: IpcContext): void {
   // --- window ---
   ipcMain.handle('window:setMode', (_evt, windowMode: AppSettings['windowMode']) => patchSettings({ windowMode }));
   ipcMain.handle('overlay:hide', () => setOverlayVisible(false));
+  ipcMain.on('overlay:setFullscreenView', (_evt, active: boolean) => ctx.setFullscreenView(!!active));
   ipcMain.handle('window:reportMetrics', (_evt, m: Parameters<typeof reportRendererMetrics>[0]) =>
     reportRendererMetrics(m)
   );
@@ -99,14 +102,6 @@ export function registerIpc(ctx: IpcContext): void {
     repoll();
   });
 
-  ipcMain.handle('playback:toggleRepeat', async () => {
-    const repeatState = REPEAT_CYCLE[(REPEAT_CYCLE.indexOf(loop.getRepeatState()) + 1) % REPEAT_CYCLE.length]!;
-    await provider().setRepeat(repeatState);
-    loop.setRepeatState(repeatState);
-    repoll();
-    return { repeatState };
-  });
-
   // Immediate re-read of the playback position. The renderer extrapolates
   // lyric time from the last poll's progressMs plus a wall-clock delta, which
   // drifts across the 2.5s poll gap and breaks outright after a seek. This is
@@ -115,5 +110,4 @@ export function registerIpc(ctx: IpcContext): void {
 
   // --- app ---
   ipcMain.handle('app:quit', () => app.quit());
-  ipcMain.handle('app:getStartupEnabled', () => app.getLoginItemSettings().openAtLogin);
 }

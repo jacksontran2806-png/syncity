@@ -27,6 +27,8 @@ function unavailable(): never {
   throw new Error(NOT_CONFIGURED);
 }
 
+/** Apple Music behind the same interface as Spotify. Currently a stub: every
+ *  call reports unavailable until the MusicKit integration lands. */
 export function createAppleMusicProvider(developerToken?: string): NowPlayingProvider {
   return {
     id: 'appleMusic',
@@ -38,7 +40,6 @@ export function createAppleMusicProvider(developerToken?: string): NowPlayingPro
     skipNext: async () => unavailable(),
     skipPrevious: async () => unavailable(),
     playPause: async () => unavailable(),
-    setRepeat: async () => unavailable(),
     setShuffle: async () => unavailable(),
   };
 }

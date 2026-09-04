@@ -30,6 +30,7 @@ function boundsFor(mode: WindowMode, display: Electron.Display): Electron.Rectan
   };
 }
 
+/** The one overlay window, or null before it is built / after it is gone. */
 export function getOverlayWindow(): BrowserWindow | null {
   return overlayWin;
 }
@@ -80,16 +81,30 @@ function setBoundsVerified(win: BrowserWindow, target: Electron.Rectangle, label
 }
 
 /** Logs the numbers needed to tell "the window is undersized" apart from "the
- *  glow doesn't reach the window's edge". */
+ *  content doesn't reach the window's edge". */
 export function logWindowDiagnostics(label: string, display: Electron.Display): void {
   if (overlayWin && !overlayWin.isDestroyed()) logWindowBounds(label, overlayWin, display);
 }
 
+/** Logs the renderer's own view of its size next to the window bounds, so an
+ *  undersized WINDOW can be told apart from an undersized PAGE. */
 export function reportRendererMetrics(m: RendererMetrics): void {
   logRendererMetrics(m, overlayWin);
 }
 
+/**
+ * Builds THE overlay window. There is only ever one: every mode (fullscreen vs
+ * windowed, and the widget's own default/notch/free placement) is a bounds or
+ * CSS change on this single window, never a second one.
+ *
+ * Callable more than once — crashDiagnostics rebuilds the window when its
+ * renderer dies. The previous window is destroyed first: reassigning
+ * `overlayWin` on its own would strand the old BrowserWindow and its native
+ * window, leaking one per crash-and-recover cycle.
+ */
 export function createOverlayWindow(displayId: number | null, mode: WindowMode = 'fullscreen'): BrowserWindow {
+  if (overlayWin && !overlayWin.isDestroyed()) overlayWin.destroy();
+
   const display = pickDisplay(displayId);
   const bounds = boundsFor(mode, display);
 
@@ -137,10 +152,18 @@ export function createOverlayWindow(displayId: number | null, mode: WindowMode =
     logWindowDiagnostics(`create/${mode}`, pickDisplay(displayId));
   });
 
+  // Drop the reference when the window goes, so getOverlayWindow() can't hand
+  // out a destroyed one and the BrowserWindow is free to be collected.
+  win.on('closed', () => {
+    if (overlayWin === win) overlayWin = null;
+  });
+
   overlayWin = win;
   return win;
 }
 
+/** Re-homes the overlay onto `displayId` (or the primary display), keeping
+ *  whatever window mode is in force. Called on any display hotplug/rescale. */
 export function moveOverlayToDisplay(displayId: number | null, mode: WindowMode = 'fullscreen'): void {
   if (!overlayWin) return;
   const display = pickDisplay(displayId);
@@ -170,6 +193,8 @@ export function applyWindowMode(mode: WindowMode, displayId: number | null): voi
   logWindowDiagnostics(mode, display);
 }
 
+/** Show/hide without stealing focus — showInactive() keeps the user's current
+ *  window active, which matters for an always-on-top overlay. */
 export function setOverlayVisible(visible: boolean): void {
   const win = overlayWin;
   if (!win || win.isDestroyed()) return;
@@ -183,11 +208,13 @@ export function setOverlayVisible(visible: boolean): void {
 // interactive region (widget/settings/lyrics panel) so we can flip it off
 // just long enough for that click.
 export function registerClickThroughIpc(): void {
-  ipcMain.on('overlay:set-ignore-mouse-events', (_evt, ignore: boolean) => {
+  ipcMain.on('overlay:setIgnoreMouseEvents', (_evt, ignore: boolean) => {
     overlayWin?.setIgnoreMouseEvents(ignore, { forward: true });
   });
 }
 
+/** Fires `onChange` whenever the display topology changes (added, removed, or
+ *  rescaled), so the overlay can re-home itself onto valid bounds. */
 export function watchDisplayChanges(onChange: () => void): void {
   screen.on('display-added', onChange);
   screen.on('display-removed', onChange);

@@ -1,0 +1,267 @@
+/* The compact widget: its dock, the collapsed pill, Notch mode's flush-to-
+   the-edge treatment, the expand/collapse animations, and the widget body
+   (artwork, track meta, transport, secondary row).
+
+   The panel surface these sit on, and the buttons inside them, are shared
+   with the settings window — those live in chrome.css. */
+
+.widget-dock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ---------- Notch mode (settings.overlayMode === 'notch') ----------
+   Pinned flush to the top edge and centred, so it reads as part of the screen
+   rather than a panel floating near it: the top corners square off and the top
+   border goes, leaving only the bottom edge visible. Both the collapsed notch
+   and the panel it opens into get the same treatment, so growing out of it
+   doesn't suddenly re-round the top. Reveal is a taller invisible band around
+   it — that's in useNotchHover, not here, since it must stay click-through. */
+.widget-dock.is-notch .widget-pill,
+.widget-dock.is-notch .widget {
+  border-top: none;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+.widget-dock.is-notch .widget-pill {
+  border-bottom-left-radius: calc(var(--pill-height, 28px) / 2);
+  border-bottom-right-radius: calc(var(--pill-height, 28px) / 2);
+}
+/* Nothing to grab in this mode — the box owns its own placement. */
+.widget-dock.is-notch,
+.widget-dock.is-notch .widget-pill {
+  cursor: default;
+}
+
+/* Auto-hide: collapsed to a Dynamic-Island-style pill. */
+.widget-pill {
+  /* Driven by settings.pillWidth/pillHeight (see App.tsx) — the fallback here
+     matches the original fixed 120x28. Radius stays half the height so it
+     always reads as a pill, however big it gets. */
+  width: var(--pill-width, 120px);
+  height: var(--pill-height, 28px);
+  border-radius: calc(var(--pill-height, 28px) / 2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  pointer-events: auto;
+  /* Tracks --panel-opacity like the rest of the chrome — the collapsed widget
+     must not be more solid than the expanded one. */
+  background: rgba(18, 18, 22, var(--panel-opacity, 0.55));
+  backdrop-filter: blur(calc(18px * var(--panel-opacity, 0.55) / 0.55));
+  border: 1px solid rgba(255, 255, 255, calc(0.08 * var(--panel-opacity, 0.55) / 0.55));
+  box-shadow: 0 6px 26px rgba(0, 0, 0, calc(0.45 * var(--panel-opacity, 0.55) / 0.55));
+  /* No default animation here — the widget-anim-*-collapse classes below own
+     it entirely, keyed off the widgetCollapseAnimation setting. */
+}
+.widget-pill img {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+.widget-pill-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+}
+/* the live waveform that says "still playing", reacting to the same bass
+   envelope the pill's own visualizer draws from (see PillWave.tsx) */
+.widget-pill-wave {
+  flex: 1;
+  height: 14px;
+  width: 100%;
+}
+
+
+/* ---------- Widget expand/collapse animations ----------
+   Both the pill and the full widget only ever MOUNT when the other one was
+   just showing (WidgetDock swaps between them, never keeps both around), so
+   a plain CSS `animation` on the newly-mounted root plays automatically on
+   the actual transition — no manual class-toggling/JS timing needed.
+   "none" intentionally has no rule here: no class match, no animation. */
+
+/* Genie: scale + corner-radius morph with a bit of overshoot, as if the
+   widget is growing out of / being sucked back into the pill. */
+.widget-anim-genie-expand {
+  animation: widget-genie-expand 550ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+/* The `to` frames deliberately omit border-radius. An animation's value wins
+   over normal declarations for as long as it applies, and these run with
+   fill-mode `both` — so a hardcoded end radius here would stick permanently
+   and override whatever the element's own CSS asks for. That's what kept
+   Notch mode's squared top corners from ever appearing, and what pinned a
+   resized pill to a 14px radius instead of half its height. Leaving the
+   property out of `to` makes the browser interpolate toward the element's
+   underlying value instead, so the corner morph still plays and every mode
+   lands on its own correct shape. */
+@keyframes widget-genie-expand {
+  from {
+    opacity: 0;
+    transform: scale(0.2);
+    border-radius: 999px;
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+.widget-anim-genie-collapse {
+  animation: widget-genie-collapse 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes widget-genie-collapse {
+  from {
+    opacity: 0;
+    transform: scale(1.5);
+    border-radius: 22px;
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Scale + fade: smaller, quieter — no overshoot, no radius morph. */
+.widget-anim-scaleFade-expand {
+  animation: widget-scale-fade-in 220ms ease-out both;
+}
+.widget-anim-scaleFade-collapse {
+  animation: widget-scale-fade-in 200ms ease-out both;
+}
+@keyframes widget-scale-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Slide up: rises into place rather than growing from a point. */
+.widget-anim-slideUp-expand {
+  animation: widget-slide-up-in 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.widget-anim-slideUp-collapse {
+  animation: widget-slide-up-in 220ms ease-out both;
+}
+@keyframes widget-slide-up-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---------- Widget body ---------- */
+.widget-connect {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+
+.widget-track-stage {
+  position: relative;
+  height: 40px;
+  overflow: hidden;
+}
+.widget-track-slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: transform 420ms ease-out, opacity 420ms ease-out;
+}
+.widget-track-slide-entering {
+  transform: translateX(26px);
+  opacity: 0;
+}
+.widget-track-slide-active {
+  transform: translateX(0);
+  opacity: 1;
+}
+.widget-track-slide-leaving {
+  transform: translateX(-26px);
+  opacity: 0;
+}
+.widget-art {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.06);
+}
+.widget-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.widget-art-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(124, 92, 255, 0.5), rgba(79, 172, 254, 0.5));
+}
+.widget-meta {
+  min-width: 0;
+  flex: 1;
+}
+.widget-title {
+  font-family: var(--font-display, 'Clash Display', sans-serif);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: rgba(255, 255, 255, 0.95);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.widget-artist {
+  font-size: 12px;
+  font-weight: 400;
+  color: #9a9a9a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.widget-transport {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 10px;
+}
+
+.widget-flash {
+  margin-top: 6px;
+  font-size: 11px;
+  text-align: center;
+  color: #ffb4b4;
+}
+
+.widget-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+

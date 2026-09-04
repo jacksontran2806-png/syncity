@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { isClickThroughLocked, onClickThroughLockChange } from '../clickThroughLock';
+import { isClickThroughLocked, onClickThroughLockChange } from '../lib/clickThroughLock';
 
 // The overlay window globally ignores mouse events (click-through) but still
 // forwards mousemove for hit-testing (see main/windows.ts). Any element

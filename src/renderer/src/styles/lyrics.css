@@ -1,6 +1,6 @@
-/* Lyrics fullscreen mode: stage layout, the four lyric styles, and the sync trim bar. */
-
-/* ---------- Lyrics fullscreen mode: karaoke view with varied entrances ---------- */
+/* The lyrics view's own chrome: the fullscreen shell, its backdrop, the two
+   "nothing is being sung right now" indicators, and the sync trim bar.
+   The per-style lyric treatments live in lyricStyles.css. */
 
 .lyrics-fullscreen {
   position: fixed;
@@ -9,265 +9,68 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 26px;
   pointer-events: none;
+  /* Matches .lyrics-backdrop's own transition below, so on a track change the
+     text colour and the backdrop it's measured against ease together instead
+     of the text stepping to its new colour ahead of the background. */
+  transition: color 400ms linear;
 }
 
-/* Album Blend / Solid background styles, painted behind everything in the
+/* Album Blend / Custom background modes, painted behind everything in the
    lyrics view. Transparent mode simply doesn't render this. */
 .lyrics-backdrop {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  transition: background 800ms ease-out;
-  z-index: 1; /* below .glow-root (5) — see the comment there */
+  transition: background 400ms linear;
+  z-index: 1; /* below the foreground stage (10) */
 }
 
-/* ---------- Lyric styles ---------- */
-
-/* Active line always breathes, even between word highlights, so it never
-   sits dead-still on screen. It's a wrapper rather than the line itself so
-   the breathe transform composes with the line's entrance transform instead
-   of one animation clobbering the other. */
-.lyrics-breathe {
-  animation: lyrics-breathe 3s ease-in-out infinite;
+/* ---------- Instrumental gap indicator ----------
+   A small countdown — three dots that fill in exactly as a real instrumental
+   gap (intro, or a long break between lines) runs out — fixed near the
+   bottom, ABOVE the sync bar. Deliberately NOT in place of the last sung
+   line: replacing it made the screen look "broken/empty" for however long
+   the gap lasted, especially for a short line followed by a long gap. The
+   line stays put; this is just a small supplementary sign that something is
+   coming, not the whole show. */
+.instrumental-dots {
+  position: fixed;
+  bottom: 62px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10; /* above the full-bleed backdrop (1) */
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
 }
-@keyframes lyrics-breathe {
+.instrumental-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  transition: opacity 300ms linear, transform 300ms linear;
+}
+
+/* ---------- No-lyrics indicator ----------
+   Shown instead of a blank screen when the track has no synced lyrics at all
+   but is actively playing. Emoji color is fixed by the font, so this only
+   ever needs a size/motion treatment, no textColor plumbing. */
+.no-lyrics-icon {
+  font-size: 40px;
+  animation: no-lyrics-pulse 3s ease-in-out infinite;
+}
+@keyframes no-lyrics-pulse {
   0%,
   100% {
-    transform: scale(1);
+    opacity: 0.35;
+    transform: scale(0.92);
   }
   50% {
-    transform: scale(1.02);
-  }
-}
-
-/* Karaoke Fill: unsung words sit back, sung words come forward. */
-.lyrics-style-karaokeFill .lyrics-word {
-  opacity: 0.45;
-  transition: opacity 180ms ease-out, text-shadow 180ms ease-out;
-}
-.lyrics-style-karaokeFill .lyrics-word.is-sung,
-.lyrics-style-karaokeFill .lyrics-word.is-current {
-  opacity: 1;
-}
-
-/* Bounce: the word being sung scales up and settles. */
-.lyrics-style-bounce .lyrics-word {
-  opacity: 0.5;
-  transform: scale(1);
-  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 180ms ease-out;
-}
-.lyrics-style-bounce .lyrics-word.is-sung {
-  opacity: 1;
-}
-.lyrics-style-bounce .lyrics-word.is-current {
-  opacity: 1;
-  transform: scale(1.15);
-}
-
-/* Equal word emphasis: a layer ON TOP of whichever style is selected, not a
-   style of its own. Kills every per-word size/weight/scale difference so
-   progress reads purely as a highlight wipe — classic karaoke. */
-.lyrics-active-line.lyrics-equal-emphasis .lyrics-word {
-  font-size: 46px !important;
-  font-weight: 700 !important;
-  transform: none !important;
-}
-.lyrics-active-line.lyrics-equal-emphasis .lyrics-word-emoji {
-  font-size: 34px !important;
-}
-
-/* Blur Focus + Stacked Fade render a window of lines around the active one. */
-.lyrics-stage-blurFocus,
-.lyrics-stage-stackedFade {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 14px;
-}
-.lyrics-stack-row {
-  text-align: center;
-  font-size: 30px;
-  font-weight: 500;
-  max-width: 78vw;
-  transition: opacity 400ms ease-out, filter 400ms ease-out, transform 400ms ease-out;
-}
-.lyrics-stack-row.is-active {
-  font-size: inherit;
-}
-/* Stacked Fade: sung lines drift up and shrink away, active line centered. */
-.lyrics-stack-stackedFade {
-  transform-origin: center;
-}
-
-.lyrics-art-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  /* position:relative purely to make z-index apply — a statically positioned
-     element ignores it entirely. 10 = above the glow ring (5); see .glow-root. */
-  position: relative;
-  z-index: 10;
-}
-.lyrics-art {
-  width: 110px;
-  height: 110px;
-  border-radius: 14px;
-  object-fit: cover;
-  transition: box-shadow 700ms ease-out;
-}
-.lyrics-art-placeholder {
-  background: linear-gradient(135deg, rgba(124, 92, 255, 0.5), rgba(79, 172, 254, 0.5));
-}
-.lyrics-nowplaying-title {
-  font-size: 14px;
-  font-weight: 600;
-  margin-top: 6px;
-}
-.lyrics-nowplaying-artist {
-  font-size: 12px;
-  color: #9a9a9a;
-}
-
-/* Centered block, held to ~65% of the screen so long lines wrap into a
-   composed paragraph instead of stretching edge to edge. */
-.lyrics-stage {
-  min-height: 220px;
-  width: min(1100px, 65vw);
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  line-height: 1.5;
-  gap: 18px;
-  /* position:relative purely to make z-index apply. 10 = above the glow ring
-     (5); see .glow-root. */
-  position: relative;
-  z-index: 10;
-}
-
-.lyrics-active-line {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: center;
-  gap: 0.32em 0.5em;
-  max-width: min(1100px, 88vw);
-  font-weight: 800;
-}
-/* One of these is picked per-line (seeded, see lyricsDisplay.ts) so lines
-   don't all arrive the same way — matches the "creative, varied" ask
-   instead of one repeated entrance animation. */
-.lyrics-active-line-slide-left {
-  animation: line-slide-left 550ms cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-.lyrics-active-line-slide-right {
-  animation: line-slide-right 550ms cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-.lyrics-active-line-slide-up {
-  animation: line-slide-up 550ms cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-.lyrics-active-line-magic {
-  animation: line-magic 650ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-@keyframes line-slide-left {
-  from {
-    opacity: 0;
-    transform: translateX(-70px);
-  }
-  to {
     opacity: 1;
-    transform: translateX(0);
+    transform: scale(1.08);
   }
-}
-@keyframes line-slide-right {
-  from {
-    opacity: 0;
-    transform: translateX(70px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-@keyframes line-slide-up {
-  from {
-    opacity: 0;
-    transform: translateY(60px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-@keyframes line-magic {
-  from {
-    opacity: 0;
-    transform: scale(0.4);
-    filter: blur(14px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-    filter: blur(0);
-  }
-}
-
-.lyrics-word {
-  display: inline-block;
-  font-weight: 800;
-  line-height: 1.15;
-  opacity: 0;
-  transform: translateY(10px) scale(0.85);
-  animation: word-pop 420ms cubic-bezier(0.2, 0.9, 0.3, 1.3) forwards;
-}
-/* ~1.5x the earlier sizes: the active line is the focal point of the view.
-   Context lines (.lyrics-stack-row, .lyrics-next-line) deliberately stay
-   small and light — the size gap is the hierarchy. */
-.lyrics-word-sm {
-  font-size: 28px;
-  font-weight: 600;
-  opacity: 0.8;
-  animation-name: word-pop-sm;
-}
-.lyrics-word-md {
-  font-size: 42px;
-}
-.lyrics-word-lg {
-  font-size: 62px;
-}
-.lyrics-word-xl {
-  font-size: 86px;
-}
-.lyrics-word-emoji {
-  font-weight: 400;
-}
-@keyframes word-pop {
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-@keyframes word-pop-sm {
-  to {
-    opacity: 0.8;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.lyrics-next-line {
-  font-size: 17px;
-  opacity: 0.35;
-  transition: opacity 300ms ease-out;
-}
-
-.lyrics-empty {
-  opacity: 0.5;
-  font-size: 16px;
 }
 
 /* ---------- Lyric sync trim ----------
@@ -278,7 +81,7 @@
   bottom: 22px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 10; /* above the glow ring (5) — see .glow-root */
+  z-index: 10; /* above the full-bleed backdrop (1) */
   display: flex;
   align-items: center;
   gap: 6px;
@@ -324,11 +127,5 @@
   min-width: 68px;
   text-align: center;
   border: 1px solid rgba(255, 255, 255, 0.14) !important;
-}
-
-.lyrics-credit {
-  font-size: 10px;
-  opacity: 0.4;
-  text-align: center;
 }
 
