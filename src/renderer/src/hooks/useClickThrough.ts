@@ -12,7 +12,7 @@ export function useClickThrough(): void {
     const apply = (ignore: boolean) => {
       if (ignore === lastIgnored) return;
       lastIgnored = ignore;
-      window.lyriglow.setIgnoreMouseEvents(ignore);
+      window.syncity.setIgnoreMouseEvents(ignore);
     };
 
     const onMouseMove = (e: MouseEvent) => {

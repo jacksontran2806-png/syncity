@@ -133,7 +133,7 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }): JSX.Elemen
           <Row label="Display">
             <select
               value={settings.displayId ?? ''}
-              onChange={(e) => window.lyriglow.selectMonitor(Number(e.target.value))}
+              onChange={(e) => window.syncity.selectMonitor(Number(e.target.value))}
             >
               {monitors.map((m) => (
                 <option key={m.id} value={m.id}>
@@ -147,7 +147,7 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }): JSX.Elemen
             <input
               type="checkbox"
               checked={settings.windowMode === 'fullscreen'}
-              onChange={(e) => window.lyriglow.setWindowMode(e.target.checked ? 'fullscreen' : 'windowed')}
+              onChange={(e) => window.syncity.setWindowMode(e.target.checked ? 'fullscreen' : 'windowed')}
             />
             <span className="settings-hint">Ctrl+Alt+F</span>
           </Row>
@@ -238,8 +238,8 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }): JSX.Elemen
           {updateFlash && <div className="settings-flash">{updateFlash}</div>}
         </Section>
 
-        <button type="button" className="quit-btn" onClick={() => window.lyriglow.quit()}>
-          Quit LyriGlow
+        <button type="button" className="quit-btn" onClick={() => window.syncity.quit()}>
+          Quit Syncity
         </button>
       </div>
     </div>

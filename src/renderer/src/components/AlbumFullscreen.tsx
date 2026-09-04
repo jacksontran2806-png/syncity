@@ -64,7 +64,7 @@ export function AlbumFullscreen(): JSX.Element {
       </div>
 
       <div className="album-transport" data-hitregion>
-        <IconButton title="Previous" size="lg" onClick={() => guarded(() => window.lyriglow.skipPrevious())}>
+        <IconButton title="Previous" size="lg" onClick={() => guarded(() => window.syncity.skipPrevious())}>
           ⏮
         </IconButton>
         <IconButton
@@ -74,7 +74,7 @@ export function AlbumFullscreen(): JSX.Element {
         >
           {nowPlaying.playing ? '⏸' : '▶'}
         </IconButton>
-        <IconButton title="Skip" size="lg" onClick={() => guarded(() => window.lyriglow.skipNext())}>
+        <IconButton title="Skip" size="lg" onClick={() => guarded(() => window.syncity.skipNext())}>
           ⏭
         </IconButton>
       </div>

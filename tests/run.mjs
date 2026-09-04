@@ -12,7 +12,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const out = mkdtempSync(join(tmpdir(), 'lyriglow-tests-'));
+const out = mkdtempSync(join(tmpdir(), 'syncity-tests-'));
 // esbuild's own JS entry, run with this Node. Not `npx`: Node refuses to
 // spawnSync a .cmd shim on Windows without a shell, and going through the
 // shell just to find a binary that's already on disk is pointless.

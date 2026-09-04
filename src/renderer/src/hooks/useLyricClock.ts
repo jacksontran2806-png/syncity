@@ -23,7 +23,7 @@ import { activeLineIndex } from '../lib/lyricsTiming';
  * vocal, which is why lyricsOffsetMs is user-trimmable and the sync bar can
  * force a fresh position read.
  */
-/** Opt-in: `localStorage.setItem('lyriglow:sync-debug','1')`. Logs
+/** Opt-in: `localStorage.setItem('syncity:sync-debug','1')`. Logs
  *  expected-vs-actual for every line as it's crossed, per the sync debugging
  *  checklist — a roughly CONSTANT delta across lines means a fixed offset
  *  (the ± trim fixes it), a GROWING delta means real clock drift (shouldn't
@@ -31,7 +31,7 @@ import { activeLineIndex } from '../lib/lyricsTiming';
  *  data for this specific track (a bad LRCLIB timestamp, or a parsing bug). */
 function syncDebugEnabled(): boolean {
   try {
-    return localStorage.getItem('lyriglow:sync-debug') === '1';
+    return localStorage.getItem('syncity:sync-debug') === '1';
   } catch {
     return false;
   }

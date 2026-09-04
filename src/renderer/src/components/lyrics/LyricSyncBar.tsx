@@ -39,7 +39,7 @@ export function LyricSyncBar(): JSX.Element {
   }, [updateSettings]);
 
   const resync = async () => {
-    await window.lyriglow.syncPlayback();
+    await window.syncity.syncPlayback();
     setFlash('Resynced');
     clearTimeout(flashTimer.current);
     flashTimer.current = setTimeout(() => setFlash(''), FLASH_MS);

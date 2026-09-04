@@ -24,20 +24,20 @@ export function App(): JSX.Element {
   const [expandSignal, setExpandSignal] = useState(0);
 
   useEffect(() => {
-    const offNowPlaying = window.lyriglow.onNowPlaying(setNowPlaying);
-    const offLyrics = window.lyriglow.onLyrics(setLyrics);
-    const offPalette = window.lyriglow.onPalette(setPalette);
-    const offOpenSettings = window.lyriglow.onOpenSettings(() => {
+    const offNowPlaying = window.syncity.onNowPlaying(setNowPlaying);
+    const offLyrics = window.syncity.onLyrics(setLyrics);
+    const offPalette = window.syncity.onPalette(setPalette);
+    const offOpenSettings = window.syncity.onOpenSettings(() => {
       setViewMode('island');
       setPanel('settings');
     });
-    const offExpand = window.lyriglow.onExpandWidget(() => setExpandSignal((n) => n + 1));
+    const offExpand = window.syncity.onExpandWidget(() => setExpandSignal((n) => n + 1));
     // The fullscreen hotkey changes settings in the main process, so the
     // renderer has to be told rather than finding out on the next poll.
-    const offSettings = window.lyriglow.onSettingsChanged((s) => useStore.setState({ settings: s }));
+    const offSettings = window.syncity.onSettingsChanged((s) => useStore.setState({ settings: s }));
 
     refreshSpotifyStatus();
-    window.lyriglow.getSettings().then((s) => useStore.setState({ settings: s }));
+    window.syncity.getSettings().then((s) => useStore.setState({ settings: s }));
 
     return () => {
       offNowPlaying();
@@ -55,7 +55,7 @@ export function App(): JSX.Element {
   // implied native resolution to check against Windows Display Settings.
   useEffect(() => {
     const report = () =>
-      void window.lyriglow.reportWindowMetrics({
+      void window.syncity.reportWindowMetrics({
         innerWidth: window.innerWidth,
         innerHeight: window.innerHeight,
         screenWidth: window.screen.width,
@@ -82,7 +82,7 @@ export function App(): JSX.Element {
       const { viewMode: vm, panel: p } = useStore.getState();
       if (vm !== 'island') setViewMode('island');
       else if (p !== 'none') setPanel('none');
-      else window.lyriglow.hideOverlay();
+      else window.syncity.hideOverlay();
     };
     const onKeyDown = (e: KeyboardEvent) => {
       // e.repeat: OS key-repeat re-fires keydown for a held key. Without this
@@ -92,7 +92,7 @@ export function App(): JSX.Element {
       stepBack();
     };
     window.addEventListener('keydown', onKeyDown);
-    const offEscape = window.lyriglow.onEscape(stepBack);
+    const offEscape = window.syncity.onEscape(stepBack);
     return () => {
       window.removeEventListener('keydown', onKeyDown);
       offEscape();
@@ -103,7 +103,7 @@ export function App(): JSX.Element {
   // actually up, so it isn't swallowing the key from every other app the rest
   // of the time.
   useEffect(() => {
-    window.lyriglow.setFullscreenView(viewMode !== 'island');
+    window.syncity.setFullscreenView(viewMode !== 'island');
   }, [viewMode]);
 
   // Runs for the app's whole lifetime, not gated on any mode or view — the

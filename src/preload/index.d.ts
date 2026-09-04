@@ -1,7 +1,7 @@
-import type { LyriGlowApi } from './index';
+import type { SyncityApi } from './index';
 
 declare global {
   interface Window {
-    lyriglow: LyriGlowApi;
+    syncity: SyncityApi;
   }
 }

@@ -22,6 +22,7 @@ import { registerHotkeys, setEscapeCapture, unregisterHotkeys } from './hotkeys'
 import { applyWindowMode, createOverlayWindow, getOverlayWindow, watchDisplayChanges, moveOverlayToDisplay } from './windows';
 import { createTray } from './tray';
 import { registerCrashDiagnostics } from './crashDiagnostics';
+import { migrateLegacyUserData } from './legacyUserData';
 
 // Must be set before app.ready. Electron already ships a Per-Monitor-V2 DPI
 // manifest, so this is belt-and-braces rather than the fix for the fullscreen
@@ -47,6 +48,11 @@ app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
 
 const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
 const REDIRECT_URI = process.env.SPOTIFY_REDIRECT_URI || 'http://127.0.0.1:8888/callback';
+
+// Must precede the first userData read below: the LyriGlow -> Syncity rename
+// moved the profile directory, and this carries the old settings and Spotify
+// session forward so an existing install doesn't come back up logged out.
+migrateLegacyUserData();
 
 let settings: AppSettings = loadSettings();
 let spotifyProvider: NowPlayingProvider;
@@ -153,5 +159,5 @@ app.on('will-quit', unregisterHotkeys);
 // No dock/taskbar presence and a tray icon — closing the window must not quit
 // the app; only the tray's Quit action (or app:quit from settings) should.
 app.on('window-all-closed', () => {
-  // intentionally a no-op: LyriGlow lives in the tray
+  // intentionally a no-op: Syncity lives in the tray
 });

@@ -83,6 +83,6 @@ const api = {
   },
 };
 
-export type LyriGlowApi = typeof api;
+export type SyncityApi = typeof api;
 
-contextBridge.exposeInMainWorld('lyriglow', api);
+contextBridge.exposeInMainWorld('syncity', api);

@@ -110,8 +110,8 @@ export function WidgetDock({ expandSignal }: Props): JSX.Element {
           data-hitregion
           title={
             isNotch
-              ? 'LyriGlow — hover the notch to open, or press Ctrl+Alt+L'
-              : 'LyriGlow — click or hover to expand, drag to move, or press Ctrl+Alt+L'
+              ? 'Syncity — hover the notch to open, or press Ctrl+Alt+L'
+              : 'Syncity — click or hover to expand, drag to move, or press Ctrl+Alt+L'
           }
         >
           {nowPlaying.artUrl ? <img src={nowPlaying.artUrl} alt="" /> : <span className="widget-pill-dot" />}

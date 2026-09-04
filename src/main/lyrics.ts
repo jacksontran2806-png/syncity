@@ -17,11 +17,11 @@ import type { LyricLine } from '../shared/types';
 import { parseLrc, pickBestHit, type LrcSearchHit } from './lrc';
 
 /** LRCLIB asks callers to identify themselves so they can spot misbehaving
- *  clients. REPLACE the URL with this project's real repo or a contact
- *  address before distributing — a placeholder is worse than useless to them. */
+ *  clients. Points at this project's repo so they have a way to reach us.
+ */
 function userAgent(): string {
   const version = app?.getVersion?.() ?? '0.0.0';
-  return `LyriGlow/${version} (https://github.com/your-name/lyriglow)`;
+  return `Syncity/${version} (https://github.com/jacksontran2806-png/syncity)`;
 }
 
 /** Lyrics are immutable per track, so one lookup per track id is enough for

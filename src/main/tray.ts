@@ -10,7 +10,7 @@ export function createTray(onOpenSettings: () => void): Tray {
   const iconPath = path.join(__dirname, '../../resources/tray-icon.png');
   const icon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
   tray = new Tray(icon);
-  tray.setToolTip('LyriGlow');
+  tray.setToolTip('Syncity');
 
   const rebuildMenu = () => {
     const win = getOverlayWindow();
@@ -27,7 +27,7 @@ export function createTray(onOpenSettings: () => void): Tray {
       },
       { label: 'Settings', click: onOpenSettings },
       { type: 'separator' },
-      { label: 'Quit LyriGlow', click: () => app.quit() },
+      { label: 'Quit Syncity', click: () => app.quit() },
     ]);
     tray?.setContextMenu(menu);
   };

@@ -8,7 +8,7 @@ function guardMessage(err: unknown): string {
   if (message.includes('forbidden_premium_required')) return 'Needs Spotify Premium';
   if (message.includes('no_active_device')) return 'No active Spotify device';
   if (message.includes('unauthorized')) return 'Reconnect Spotify in settings';
-  if (message.includes('redirect_port_in_use')) return 'Port 8888 is busy — quit any other LyriGlow window and retry';
+  if (message.includes('redirect_port_in_use')) return 'Port 8888 is busy — quit any other Syncity window and retry';
   return `Command failed: ${message}`;
 }
 
@@ -53,7 +53,7 @@ export function Widget(): JSX.Element {
     return (
       <div className={`widget widget-anim-${expandAnim}-expand`} data-hitregion>
         <div className="widget-connect">
-          <span>LyriGlow</span>
+          <span>Syncity</span>
           <button
             type="button"
             className="connect-btn"
@@ -99,13 +99,13 @@ export function Widget(): JSX.Element {
       </div>
 
       <div className="widget-transport">
-        <IconButton title="Previous" size="lg" onClick={() => guarded(() => window.lyriglow.skipPrevious())}>
+        <IconButton title="Previous" size="lg" onClick={() => guarded(() => window.syncity.skipPrevious())}>
           ⏮
         </IconButton>
         <IconButton title={playing ? 'Pause' : 'Play'} size="lg" onClick={() => guarded(() => setPlaying(!playing))}>
           {playing ? '⏸' : '▶'}
         </IconButton>
-        <IconButton title="Skip" size="lg" onClick={() => guarded(() => window.lyriglow.skipNext())}>
+        <IconButton title="Skip" size="lg" onClick={() => guarded(() => window.syncity.skipNext())}>
           ⏭
         </IconButton>
       </div>
@@ -122,7 +122,7 @@ export function Widget(): JSX.Element {
         <IconButton
           title="Shuffle"
           active={!!nowPlaying.shuffle}
-          onClick={() => guarded(() => window.lyriglow.toggleShuffle(!nowPlaying.shuffle))}
+          onClick={() => guarded(() => window.syncity.toggleShuffle(!nowPlaying.shuffle))}
         >
           ⤨
         </IconButton>

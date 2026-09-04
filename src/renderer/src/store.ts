@@ -8,7 +8,7 @@ export type PanelId = 'none' | 'settings';
 // lyrics = fullscreen karaoke-style lyrics
 export type ViewMode = 'island' | 'album' | 'lyrics';
 
-interface LyriGlowState {
+interface SyncityState {
   nowPlaying: NowPlaying;
   /** The clock the lyric highlight actually runs on. Polls re-anchor it; the
    *  rAF loop in useLyricClock reads it every frame. See lib/playbackClock. */
@@ -46,7 +46,7 @@ const DEFAULT_PALETTE: AlbumPalette = {
   tertiary: { r: 255, g: 92, b: 205 },
 };
 
-export const useStore = create<LyriGlowState>((set, get) => ({
+export const useStore = create<SyncityState>((set, get) => ({
   nowPlaying: { connected: false },
   anchor: ZERO_ANCHOR,
   lyrics: null,
@@ -66,7 +66,7 @@ export const useStore = create<LyriGlowState>((set, get) => ({
 
   setPlaying: async (play) => {
     set((s) => ({ anchor: anchorFromLocalEvent(s.anchor, play, Date.now()) }));
-    await window.lyriglow.playPause(play);
+    await window.syncity.playPause(play);
   },
 
   setLyrics: (lines) => set({ lyrics: lines }),
@@ -77,22 +77,22 @@ export const useStore = create<LyriGlowState>((set, get) => ({
   setAudioBars: (bars) => set({ audioBars: bars }),
 
   updateSettings: async (partial) => {
-    const updated = await window.lyriglow.updateSettings(partial);
+    const updated = await window.syncity.updateSettings(partial);
     set({ settings: updated });
   },
 
   refreshSpotifyStatus: async () => {
-    const status = await window.lyriglow.spotifyStatus();
+    const status = await window.syncity.spotifyStatus();
     set({ spotifyStatus: status });
   },
 
   connectSpotify: async () => {
-    await window.lyriglow.spotifyConnect();
+    await window.syncity.spotifyConnect();
     await get().refreshSpotifyStatus();
   },
 
   loadMonitors: async () => {
-    const monitors = await window.lyriglow.listMonitors();
+    const monitors = await window.syncity.listMonitors();
     set({ monitors });
   },
 }));
