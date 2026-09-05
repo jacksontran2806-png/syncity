@@ -15,10 +15,6 @@ import {
   setOverlayVisible,
 } from './windows';
 
-/** Delay before re-polling after a transport command — long enough for the
- *  provider to have applied it, short enough to feel immediate. */
-const AFTER_COMMAND_MS = 350;
-
 export interface IpcContext {
   getSettings: () => AppSettings;
   /** Merges, persists, and runs any side effects the changed keys imply. */
@@ -34,7 +30,9 @@ export interface IpcContext {
 /** Registers every ipcMain handler. Call once, after the window exists. */
 export function registerIpc(ctx: IpcContext): void {
   const { getSettings, patchSettings, provider, loop } = ctx;
-  const repoll = () => setTimeout(() => void loop.tick(), AFTER_COMMAND_MS);
+  // Asks the loop to look again soon and stay alert for a few polls — it owns
+  // the timing now, so a command can never leave two schedules running.
+  const repoll = () => loop.bump();
 
   registerClickThroughIpc();
 

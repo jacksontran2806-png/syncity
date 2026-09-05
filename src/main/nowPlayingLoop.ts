@@ -9,22 +9,13 @@ import type { NowPlaying } from '../shared/types';
 import { RateLimitError, type NowPlayingProvider } from './providers/types';
 import { fetchSyncedLyrics } from './lyrics';
 import { extractAlbumPalette } from './color';
+import { nextPollDelayMs, BURST_POLLS, type PollState } from './pollSchedule';
 
-/**
- * How often to ask the source where playback is.
- *
- * Raised from 2s once the renderer started running on a local anchor
- * (lib/playbackClock): the highlight is extrapolated frame by frame between
- * polls, so a poll is only a correction, not the thing driving the UI.
- * Halving the request rate costs nothing in sync accuracy and buys real
- * headroom against the API's rate limits — a 2s poll is 1800 requests an hour
- * for a single listener, from an app designed to sit open all day.
- *
- * The cost is that a track change made OUTSIDE this app can take up to this
- * long to show. Changes made from our own transport don't wait: those repoll
- * ~350ms later (see ipc.ts).
- */
-const POLL_MS = 4000;
+// Poll cadence is adaptive — see pollSchedule.ts for the policy and why.
+
+/** Delay before the confirming poll after a transport command: long enough
+ *  for the service to have applied it, short enough to feel immediate. */
+const AFTER_COMMAND_MS = 350;
 
 /** Ceiling on the half-round-trip added to a reported position. Past this the
  *  request was slow enough that the measurement says nothing dependable about
@@ -41,20 +32,36 @@ export interface LoopDeps {
 }
 
 export interface NowPlayingLoop {
-  /** One poll now, out of band. Also the Resync path from the lyrics view. */
+  /** One poll now, out of band. Also the Resync path from the lyrics view.
+   *  Reschedules the next poll, so calling it never leaves two timers running. */
   tick: () => Promise<void>;
   start: () => void;
   stop: () => void;
   /** Forget the current track so the next tick re-runs the track-change work
    *  (palette extraction, lyrics fetch). */
   forgetTrack: () => void;
+  /** "Something just changed — look sooner." Used after a transport command,
+   *  which is the one moment we know the answer is about to be stale. Polls
+   *  shortly and then quickly a few more times before easing off. */
+  bump: () => void;
 }
 
 /** Builds the poll loop. Nothing runs until start(); the returned handle owns
  *  the timer, so callers never touch it directly. */
 export function createNowPlayingLoop({ provider, colorOverrideEnabled, send }: LoopDeps): NowPlayingLoop {
-  let timer: ReturnType<typeof setInterval> | null = null;
+  let timer: ReturnType<typeof setTimeout> | null = null;
   let lastTrackId: string | null | undefined = null;
+  let stopped = true;
+  /** Guards against two polls in flight at once, which an out-of-band tick()
+   *  during a slow request would otherwise cause. */
+  let inFlight = false;
+  const schedule: PollState = {
+    playing: false,
+    msUntilTrackEnd: null,
+    idleStreak: 0,
+    errorStreak: 0,
+    burstsLeft: 0,
+  };
   /** Epoch ms before which we must not call the source again. Set from a 429's
    *  own Retry-After. Polling through a rate limit is what turns a short one
    *  into a long one, so while this is in the future every tick returns
@@ -93,8 +100,36 @@ export function createNowPlayingLoop({ provider, colorOverrideEnabled, send }: L
       .catch((err) => console.error('[lyrics] fetch failed:', err.message));
   }
 
+  /** Replaces any pending poll with one `delayMs` from now. Every path out of
+   *  tick() goes through here, so there is only ever one timer outstanding no
+   *  matter how the tick was triggered. */
+  function scheduleNext(delayMs: number): void {
+    if (timer) clearTimeout(timer);
+    if (stopped) return;
+    timer = setTimeout(() => void tick(), delayMs);
+  }
+
+  /** Runs the poll, then schedules the next one from whatever it learned. */
   async function tick(): Promise<void> {
+    if (inFlight) return; // a poll is already out; its own completion reschedules
+    inFlight = true;
+    try {
+      await pollOnce();
+    } finally {
+      inFlight = false;
+      // While throttled, sleep out the window exactly rather than waking on
+      // the normal cadence just to return early — no requests either way, but
+      // this way the loop is genuinely idle for the duration.
+      const throttleLeft = quietUntil - Date.now();
+      scheduleNext(throttleLeft > 0 ? Math.max(throttleLeft, 1000) : nextPollDelayMs(schedule));
+    }
+  }
+
+  async function pollOnce(): Promise<void> {
     if (!provider().isAuthed()) {
+      // Not signed in: nothing to ask and nothing to wait for but the user.
+      schedule.playing = false;
+      schedule.idleStreak++;
       send('nowPlaying:update', { connected: false } satisfies NowPlaying);
       return;
     }
@@ -123,6 +158,12 @@ export function createNowPlayingLoop({ provider, colorOverrideEnabled, send }: L
     } catch (err) {
       if (err instanceof RateLimitError) {
         quietUntil = Date.now() + err.retryAfterS * 1000;
+        // Not an error streak: we know exactly how long to wait, so back-off
+        // guessing would only muddy it. The quietUntil guard above is what
+        // holds the line.
+        schedule.errorStreak = 0;
+        schedule.burstsLeft = 0;
+        schedule.playing = false;
         console.warn(
           `[now-playing] rate limited by the music source; going quiet for ${err.retryAfterS}s ` +
             `(until ${new Date(quietUntil).toLocaleTimeString()})`
@@ -135,6 +176,10 @@ export function createNowPlayingLoop({ provider, colorOverrideEnabled, send }: L
         } satisfies NowPlaying);
         return;
       }
+      // Anything else: back off progressively rather than retrying a failing
+      // endpoint at full cadence.
+      schedule.errorStreak++;
+      schedule.playing = false;
       const message = err instanceof Error ? err.message : String(err);
       const authFailed = message === 'unauthorized';
       send('nowPlaying:update', {
@@ -146,10 +191,25 @@ export function createNowPlayingLoop({ provider, colorOverrideEnabled, send }: L
     }
 
     if (!np || !np.isPlaying) {
+      schedule.errorStreak = 0;
+      schedule.playing = false;
+      schedule.idleStreak++;
+      schedule.msUntilTrackEnd = null;
+      if (schedule.burstsLeft > 0) schedule.burstsLeft--;
       lastTrackId = null;
       send('nowPlaying:update', { connected: true, playing: false } satisfies NowPlaying);
       return;
     }
+
+    schedule.errorStreak = 0;
+    schedule.idleStreak = 0;
+    schedule.playing = true;
+    // Feeds the "never sleep past the end of the track" clamp: the track
+    // boundary is the one moment a change is actually expected, so the policy
+    // wakes just after it however slow the baseline is.
+    schedule.msUntilTrackEnd =
+      np.durationMs != null && np.progressMs != null ? Math.max(0, np.durationMs - np.progressMs) : null;
+    if (schedule.burstsLeft > 0) schedule.burstsLeft--;
 
     const receivedAt = Date.now();
     // Clamped because the correction is only a good estimate while the trip is
@@ -184,16 +244,24 @@ export function createNowPlayingLoop({ provider, colorOverrideEnabled, send }: L
   return {
     tick,
     start() {
-      if (timer) clearInterval(timer);
-      timer = setInterval(tick, POLL_MS);
-      void tick();
+      stopped = false;
+      void tick(); // polls now, then schedules itself from what it finds
     },
     stop() {
-      if (timer) clearInterval(timer);
+      stopped = true;
+      if (timer) clearTimeout(timer);
       timer = null;
     },
     forgetTrack() {
       lastTrackId = null;
+    },
+    bump() {
+      // A transport command just landed, so the current answer is about to be
+      // wrong. Poll shortly (not instantly — the change needs a moment to
+      // register on the service) and stay quick for a few polls after.
+      schedule.burstsLeft = BURST_POLLS;
+      schedule.errorStreak = 0;
+      scheduleNext(AFTER_COMMAND_MS);
     },
   };
 }
