@@ -3,6 +3,14 @@ import { useStore } from '../store';
 import { IconButton } from './IconButton';
 import { useSlideTransition } from '../hooks/useSlideTransition';
 
+/** "in 4 min" / "in 45s" — coarse on purpose, since the exact second a rate
+ *  limit lifts isn't something to promise. */
+function retryLabel(retryAtMs: number): string {
+  const seconds = Math.max(0, Math.round((retryAtMs - Date.now()) / 1000));
+  if (seconds < 60) return `in ${seconds}s`;
+  return `in ${Math.ceil(seconds / 60)} min`;
+}
+
 function guardMessage(err: unknown): string {
   const message = err instanceof Error ? err.message : String(err);
   if (message.includes('forbidden_premium_required')) return 'Needs Spotify Premium';
@@ -82,8 +90,21 @@ export function Widget(): JSX.Element {
       <div className="widget-track-stage">
         {trackLayers.map((layer) => {
           const np = layer.value;
-          const title = np.playing ? np.title : np.connected ? 'Nothing playing' : 'Not connected';
-          const artist = np.playing ? np.artist : '';
+          // A throttled source is NOT "nothing playing" — saying so is what
+          // made a rate limit look like a broken app. Say what's actually
+          // happening, and when it clears.
+          const title = np.playing
+            ? np.title
+            : np.error === 'rate_limited'
+              ? 'Spotify is rate-limiting us'
+              : np.connected
+                ? 'Nothing playing'
+                : 'Not connected';
+          const artist = np.playing
+            ? np.artist
+            : np.error === 'rate_limited' && np.retryAtMs
+              ? `Retrying ${retryLabel(np.retryAtMs)}`
+              : '';
           return (
             <div key={layer.key} className={`widget-track-slide widget-track-slide-${layer.place}`}>
               <div className="widget-art">

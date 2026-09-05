@@ -1,5 +1,22 @@
 import type { NowPlaying } from '../../shared/types';
 
+/**
+ * The source is refusing requests for a while (HTTP 429).
+ *
+ * Carries the provider's own retry window rather than a guess, because the
+ * only way out of a rate limit is to stop asking — and continuing to poll
+ * through one generally extends it. Distinct from a generic failure so the
+ * poll loop can go quiet for exactly as long as it's told to, and so the UI
+ * can say "throttled" instead of "nothing playing", which is what made this
+ * look like a broken app rather than a backed-off one.
+ */
+export class RateLimitError extends Error {
+  constructor(readonly retryAfterS: number) {
+    super(`rate_limited_${retryAfterS}s`);
+    this.name = 'RateLimitError';
+  }
+}
+
 export type ProviderTrack =
   | (Omit<NowPlaying, 'connected' | 'playing'> & {
       isPlaying: boolean;

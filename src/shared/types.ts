@@ -25,6 +25,9 @@ export interface NowPlaying {
   trackId?: string;
   shuffle?: boolean;
   receivedAt?: number;
+  /** When a rate limit lifts (epoch ms), if the source is currently throttling
+   *  us. Paired with error: 'rate_limited'. */
+  retryAtMs?: number;
   /** Measured round trip of the poll that produced this, ms. Diagnostic only —
    *  the position above is already corrected by half of it. */
   pollLatencyMs?: number;

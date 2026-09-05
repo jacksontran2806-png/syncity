@@ -6,11 +6,25 @@
 // get an explicit handle instead.
 
 import type { NowPlaying } from '../shared/types';
-import type { NowPlayingProvider } from './providers/types';
+import { RateLimitError, type NowPlayingProvider } from './providers/types';
 import { fetchSyncedLyrics } from './lyrics';
 import { extractAlbumPalette } from './color';
 
-const POLL_MS = 2000;
+/**
+ * How often to ask the source where playback is.
+ *
+ * Raised from 2s once the renderer started running on a local anchor
+ * (lib/playbackClock): the highlight is extrapolated frame by frame between
+ * polls, so a poll is only a correction, not the thing driving the UI.
+ * Halving the request rate costs nothing in sync accuracy and buys real
+ * headroom against the API's rate limits — a 2s poll is 1800 requests an hour
+ * for a single listener, from an app designed to sit open all day.
+ *
+ * The cost is that a track change made OUTSIDE this app can take up to this
+ * long to show. Changes made from our own transport don't wait: those repoll
+ * ~350ms later (see ipc.ts).
+ */
+const POLL_MS = 4000;
 
 /** Ceiling on the half-round-trip added to a reported position. Past this the
  *  request was slow enough that the measurement says nothing dependable about
@@ -41,6 +55,11 @@ export interface NowPlayingLoop {
 export function createNowPlayingLoop({ provider, colorOverrideEnabled, send }: LoopDeps): NowPlayingLoop {
   let timer: ReturnType<typeof setInterval> | null = null;
   let lastTrackId: string | null | undefined = null;
+  /** Epoch ms before which we must not call the source again. Set from a 429's
+   *  own Retry-After. Polling through a rate limit is what turns a short one
+   *  into a long one, so while this is in the future every tick returns
+   *  without touching the network. */
+  let quietUntil = 0;
 
   /** Palette + lyrics for a newly started track. Both are fire-and-forget: a
    *  failure in either must not stop playback updates. */
@@ -80,6 +99,18 @@ export function createNowPlayingLoop({ provider, colorOverrideEnabled, send }: L
       return;
     }
 
+    // Serving the throttle. Keep telling the UI why it's quiet — silence here
+    // is what made a rate limit look like "nothing is playing".
+    if (Date.now() < quietUntil) {
+      send('nowPlaying:update', {
+        connected: true,
+        playing: false,
+        error: 'rate_limited',
+        retryAtMs: quietUntil,
+      } satisfies NowPlaying);
+      return;
+    }
+
     let np;
     // Measured per poll, never assumed: the position Spotify reports was true
     // when IT read the clock, and the answer then spent the trip home getting
@@ -90,6 +121,20 @@ export function createNowPlayingLoop({ provider, colorOverrideEnabled, send }: L
     try {
       np = await provider().getCurrentlyPlaying();
     } catch (err) {
+      if (err instanceof RateLimitError) {
+        quietUntil = Date.now() + err.retryAfterS * 1000;
+        console.warn(
+          `[now-playing] rate limited by the music source; going quiet for ${err.retryAfterS}s ` +
+            `(until ${new Date(quietUntil).toLocaleTimeString()})`
+        );
+        send('nowPlaying:update', {
+          connected: true,
+          playing: false,
+          error: 'rate_limited',
+          retryAtMs: quietUntil,
+        } satisfies NowPlaying);
+        return;
+      }
       const message = err instanceof Error ? err.message : String(err);
       const authFailed = message === 'unauthorized';
       send('nowPlaying:update', {

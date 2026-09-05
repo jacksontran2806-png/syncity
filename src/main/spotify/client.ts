@@ -7,6 +7,7 @@
 
 import { SpotifyAuth } from './auth';
 import type { NowPlaying } from '../../shared/types';
+import { RateLimitError } from '../providers/types';
 
 const API = 'https://api.spotify.com/v1';
 
@@ -28,6 +29,13 @@ export type CurrentTrack = Omit<NowPlaying, 'connected' | 'playing'> & {
   primaryArtist: string | null;
   shuffle: boolean;
 };
+
+/** Spotify's retry window, in seconds. The header is authoritative; the
+ *  fallback only covers a 429 that arrives without one. */
+function retryAfterSeconds(resp: Response): number {
+  const raw = Number(resp.headers.get('retry-after'));
+  return Number.isFinite(raw) && raw > 0 ? raw : 60;
+}
 
 export class SpotifyClient {
   private auth: SpotifyAuth;
@@ -53,6 +61,7 @@ export class SpotifyClient {
     });
     if (resp.status === 204) return null; // nothing playing
     if (resp.status === 401) throw new Error('unauthorized');
+    if (resp.status === 429) throw new RateLimitError(retryAfterSeconds(resp));
     if (!resp.ok) throw new Error(`spotify_api_${resp.status}`);
 
     const data = (await resp.json()) as SpotifyPlayerResponse | null;
@@ -81,6 +90,7 @@ export class SpotifyClient {
       headers: { Authorization: `Bearer ${await this.auth.accessToken()}` },
     });
     if (resp.status === 401) throw new Error('unauthorized');
+    if (resp.status === 429) throw new RateLimitError(retryAfterSeconds(resp));
     if (resp.status === 403) throw new Error('forbidden_premium_required');
     if (resp.status === 404) throw new Error('no_active_device');
     if (!resp.ok && resp.status !== 204) throw new Error(`spotify_api_${resp.status}`);
