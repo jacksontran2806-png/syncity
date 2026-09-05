@@ -14,7 +14,6 @@ const API = 'https://api.spotify.com/v1';
 interface SpotifyPlayerResponse {
   is_playing: boolean;
   progress_ms: number;
-  shuffle_state: boolean;
   item: {
     id: string;
     name: string;
@@ -27,7 +26,7 @@ interface SpotifyPlayerResponse {
 export type CurrentTrack = Omit<NowPlaying, 'connected' | 'playing'> & {
   isPlaying: boolean;
   primaryArtist: string | null;
-  shuffle: boolean;
+
 };
 
 /** Spotify's retry window, in seconds. The header is authoritative; the
@@ -54,7 +53,7 @@ export class SpotifyClient {
 
   /** Returns null when nothing is playing / paused / no active device — it
    *  never throws for those. Uses /me/player rather than /currently-playing
-   *  because shuffle_state is needed too. */
+   *  because it reports the active device and playback state together. */
   async getCurrentlyPlaying(): Promise<CurrentTrack | null> {
     const resp = await fetch(`${API}/me/player`, {
       headers: { Authorization: `Bearer ${await this.auth.accessToken()}` },
@@ -78,7 +77,6 @@ export class SpotifyClient {
       primaryArtist: artists[0]?.name ?? null,
       album: data.item.album?.name,
       artUrl: data.item.album?.images?.[0]?.url ?? null,
-      shuffle: !!data.shuffle_state,
     };
   }
 
@@ -99,5 +97,4 @@ export class SpotifyClient {
   skipNext = (): Promise<void> => this.command('POST', 'next');
   skipPrevious = (): Promise<void> => this.command('POST', 'previous');
   playPause = (play: boolean): Promise<void> => this.command('PUT', play ? 'play' : 'pause');
-  setShuffle = (enabled: boolean): Promise<void> => this.command('PUT', `shuffle?state=${enabled}`);
 }

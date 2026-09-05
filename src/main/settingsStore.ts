@@ -51,6 +51,10 @@ export function loadSettings(): AppSettings {
       raw.lyricsCustomColor = raw.lyricsSolidColor === 'white' ? { r: 255, g: 255, b: 255 } : { r: 0, g: 0, b: 0 };
     }
     if (raw && 'lyricsSolidColor' in raw) delete raw.lyricsSolidColor;
+    // Overlay mode 'default' was removed — it was Free without the dragging,
+    // so Free is the closest landing spot and keeps the widget where the user
+    // last had it rather than snapping it to the top edge.
+    if (raw?.overlayMode === 'default') raw.overlayMode = 'free';
     // 'moveWidgetMode' is gone: the boxes are always draggable, so the toggle
     // has nothing to gate. Dropped rather than left as a dead key.
     if (raw && 'moveWidgetMode' in raw) delete raw.moveWidgetMode;

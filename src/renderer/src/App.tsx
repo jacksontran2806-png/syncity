@@ -3,6 +3,7 @@ import { useStore } from './store';
 import { useClickThrough } from './hooks/useClickThrough';
 import { startSpectrumBars, type AudioReactiveHandle } from './lib/audio';
 import { fontThemeSpec } from './lib/fontThemes';
+import { chromeTintRgb } from './lib/colorUtils';
 import { WidgetDock } from './components/WidgetDock';
 import { SettingsWindow } from './components/SettingsWindow';
 import { AlbumFullscreen } from './components/AlbumFullscreen';
@@ -19,6 +20,7 @@ export function App(): JSX.Element {
   const setViewMode = useStore((s) => s.setViewMode);
   const refreshSpotifyStatus = useStore((s) => s.refreshSpotifyStatus);
   const settings = useStore((s) => s.settings);
+  const palette = useStore((s) => s.palette);
   const viewMode = useStore((s) => s.viewMode);
   const panel = useStore((s) => s.panel);
   const [expandSignal, setExpandSignal] = useState(0);
@@ -140,6 +142,11 @@ export function App(): JSX.Element {
         // back off the DOM for its canvas measurement — see fontThemes.ts.
         '--font-display': fontThemeSpec(settings.fontTheme).display,
         '--font-body': fontThemeSpec(settings.fontTheme).body,
+        // Chrome fill, as bare "r, g, b" so each rule can pair it with its own
+        // alpha. Album tint runs through moodyTintRgb rather than using the
+        // palette raw: a cover's dominant colour is often bright enough to
+        // wash out white text, and the chrome has to stay a background.
+        '--chrome-tint': chromeTintRgb(settings.chromeTint, palette.primary),
       } as React.CSSProperties}
     >
       {viewMode === 'island' && <WidgetDock expandSignal={expandSignal} />}

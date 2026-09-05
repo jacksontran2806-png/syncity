@@ -231,7 +231,6 @@ export function createNowPlayingLoop({ provider, colorOverrideEnabled, send }: L
       progressMs: (np.progressMs ?? 0) + oneWayMs,
       durationMs: np.durationMs,
       trackId: np.trackId,
-      shuffle: np.shuffle,
       // Stamped after the await, so the renderer's extrapolation starts from
       // when the value actually arrived rather than when it was requested.
       receivedAt,

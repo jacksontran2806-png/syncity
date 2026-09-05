@@ -140,13 +140,6 @@ export function Widget(): JSX.Element {
         <IconButton title="Album mode" onClick={() => setViewMode('album')}>
           ⛶
         </IconButton>
-        <IconButton
-          title="Shuffle"
-          active={!!nowPlaying.shuffle}
-          onClick={() => guarded(() => window.syncity.toggleShuffle(!nowPlaying.shuffle))}
-        >
-          ⤨
-        </IconButton>
         {/* Pins the widget expanded, bypassing auto-hide — for anyone who
             just wants the full menu and never wants to think about the
             pill. Lives here, not in Settings, since it's meant to be the

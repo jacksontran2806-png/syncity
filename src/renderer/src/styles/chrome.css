@@ -55,7 +55,7 @@
 .widget,
 .panel {
   width: 280px;
-  background: rgba(15, 15, 15, var(--panel-opacity, 0.55));
+  background: rgba(var(--chrome-tint, 15, 15, 15), var(--panel-opacity, 0.55));
   backdrop-filter: blur(calc(24px * var(--panel-opacity, 0.55) / 0.55)) saturate(1.4);
   -webkit-backdrop-filter: blur(calc(24px * var(--panel-opacity, 0.55) / 0.55)) saturate(1.4);
   border-radius: 22px;

@@ -1,7 +1,7 @@
 // Spotify Auth Code + PKCE flow, no client secret needed.
 //
 // Scopes: user-read-currently-playing, user-read-playback-state,
-// user-modify-playback-state (skip/back/repeat/shuffle — Premium-only on
+// user-modify-playback-state (skip/back — Premium-only on
 // Spotify's side; free accounts get a 403 from these endpoints).
 //
 // CAUTION — not verified as production-ready: this app runs in Spotify's

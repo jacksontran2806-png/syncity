@@ -23,7 +23,6 @@ export interface NowPlaying {
   progressMs?: number;
   durationMs?: number;
   trackId?: string;
-  shuffle?: boolean;
   receivedAt?: number;
   /** When a rate limit lifts (epoch ms), if the source is currently throttling
    *  us. Paired with error: 'rate_limited'. */
@@ -65,16 +64,23 @@ export type WindowMode = 'fullscreen' | 'windowed';
 
 // How the compact widget is placed and revealed inside the overlay.
 //
-// default = the original behavior: parked top-centre below the safe-area
-//           offset, fixed there (nothing to knock out of place).
-// notch   = pinned flush to the top edge, horizontally centred, styled as a
-//           screen notch. Reveals on hover from anywhere in a taller invisible
-//           band around it, not just the pill's own few pixels.
-// free    = drag it anywhere; the position persists across restarts and is
-//           clamped back on-screen if the display it was on went away.
+// notch = pinned flush to the top edge, horizontally centred, styled as a
+//         screen notch. Opens on hover over the notch itself.
+// free  = drag it anywhere; the position persists across restarts and is
+//         clamped back on-screen if the display it was on went away.
 //
-// Dragging belongs to Free mode alone — the other two own their placement.
-export type OverlayMode = 'default' | 'notch' | 'free';
+// A third 'default' mode (parked top-centre, not draggable) was removed — it
+// was Free without the dragging, so it earned nothing. Saved settings holding
+// it migrate to 'free', the closer of the two. See settingsStore.
+export type OverlayMode = 'notch' | 'free';
+
+// Chrome fill for the notch/pill and the panels.
+//
+// neutral = the app's own near-black, the same whatever is playing.
+// album   = tinted toward the cover's dominant colour, darkened enough to keep
+//           white text readable — the chrome takes on the record's character
+//           instead of sitting on top of it.
+export type ChromeTint = 'neutral' | 'album';
 
 // Typeface pairing for the whole app. Each is a display face (track titles,
 // Giant Word, album titles) plus a body face (everything else) — see
@@ -141,6 +147,8 @@ export interface AppSettings {
   fontTheme: FontTheme;
   /** Where the compact widget sits and how it's revealed — see OverlayMode. */
   overlayMode: OverlayMode;
+  /** Neutral chrome, or tinted from the album cover — see ChromeTint. */
+  chromeTint: ChromeTint;
   /** The widget's free-mode position (OverlayMode 'free'). Ignored by the
    *  other two modes, which compute their own placement, but kept so
    *  switching back to Free restores where it used to be. Settings box is
@@ -193,7 +201,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   widgetExpandAnimation: 'genie',
   widgetCollapseAnimation: 'genie',
   fontTheme: 'studio',
-  overlayMode: 'default',
+  overlayMode: 'notch',
+  chromeTint: 'neutral',
   widgetPosition: null,
   settingsPosition: null,
   pillWidth: 120,

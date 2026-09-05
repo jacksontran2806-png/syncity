@@ -16,7 +16,6 @@ const api = {
   skipNext: (): Promise<void> => ipcRenderer.invoke('playback:next'),
   skipPrevious: (): Promise<void> => ipcRenderer.invoke('playback:previous'),
   playPause: (play: boolean): Promise<void> => ipcRenderer.invoke('playback:playPause', play),
-  toggleShuffle: (enabled: boolean): Promise<void> => ipcRenderer.invoke('playback:toggleShuffle', enabled),
   /** Re-reads the playback position now instead of waiting for the next poll. */
   syncPlayback: (): Promise<void> => ipcRenderer.invoke('playback:sync'),
 

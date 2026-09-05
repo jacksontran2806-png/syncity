@@ -40,6 +40,5 @@ export function createAppleMusicProvider(developerToken?: string): NowPlayingPro
     skipNext: async () => unavailable(),
     skipPrevious: async () => unavailable(),
     playPause: async () => unavailable(),
-    setShuffle: async () => unavailable(),
   };
 }

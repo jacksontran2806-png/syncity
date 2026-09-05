@@ -5,6 +5,7 @@ import { useNotchHover } from '../hooks/useNotchHover';
 import { Widget } from './Widget';
 import { PillWave } from './PillWave';
 import { DraggableBox, type PlacementEnv } from './DraggableBox';
+import { useSlideTransition } from '../hooks/useSlideTransition';
 
 /** A brief pass over the pill shouldn't pop the full widget open — only a
  *  sustained hover does. Long enough that dragging the pill (which necessarily
@@ -30,6 +31,10 @@ export function WidgetDock({ expandSignal }: Props): JSX.Element {
 
   const boxRef = useRef<HTMLDivElement | null>(null);
   const notchHovered = useNotchHover(isNotch, boxRef);
+
+  // Keyed on the track id so a genuine song change animates, while the poll
+  // re-sending the same track every few seconds does not.
+  const pillLayers = useSlideTransition(nowPlaying.artUrl ?? null, nowPlaying.trackId ?? 'none', 420);
 
   const collapsed = useAutoHide(settings.autoHideWidget && !settings.widgetLocked, expandSignal) && panel === 'none';
   const [hovered, setHovered] = useState(false);
@@ -74,7 +79,7 @@ export function WidgetDock({ expandSignal }: Props): JSX.Element {
 
   // Notch: flush to the top edge, horizontally centred — the safe-area offset
   // is deliberately ignored, since "flush against the edge" IS the mode.
-  // Default/Free: centred on the top edge, below any safe-area offset.
+  // Free: centred on the top edge below the safe-area offset, until dragged.
   const placement = useCallback(
     ({ vw, vh, bw }: PlacementEnv) => ({
       x: (vw - bw) / 2,
@@ -93,9 +98,9 @@ export function WidgetDock({ expandSignal }: Props): JSX.Element {
   return (
     <DraggableBox
       className={`widget-dock ${showPill ? 'is-pill' : ''} ${isNotch ? 'is-notch' : ''}`}
-      // Only Free mode restores a saved position; the other two compute their
-      // own placement every time, so a position saved in Free doesn't drag
-      // them off their anchor — it just waits there for the next switch back.
+      // Only Free mode restores a saved position; Notch computes its own
+      // placement every time, so a position saved in Free never drags the
+      // notch off the top edge — it just waits for the next switch back.
       draggable={mode === 'free'}
       elementRef={boxRef}
       position={mode === 'free' ? settings.widgetPosition : null}
@@ -114,7 +119,20 @@ export function WidgetDock({ expandSignal }: Props): JSX.Element {
               : 'Syncity — click or hover to expand, drag to move, or press Ctrl+Alt+L'
           }
         >
-          {nowPlaying.artUrl ? <img src={nowPlaying.artUrl} alt="" /> : <span className="widget-pill-dot" />}
+          {/* Track changes slide the artwork sideways rather than cutting to
+              the new cover — the same treatment the expanded widget and Album
+              mode already use, so a change reads as movement at any size. */}
+          <div className="widget-pill-art">
+            {pillLayers.map((layer) => (
+              <div key={layer.key} className={`widget-pill-slide widget-pill-slide-${layer.place}`}>
+                {layer.value ? (
+                  <img src={layer.value} alt="" />
+                ) : (
+                  <span className="widget-pill-dot" />
+                )}
+              </div>
+            ))}
+          </div>
           <PillWave />
         </div>
       ) : (

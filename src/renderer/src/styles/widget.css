@@ -50,12 +50,45 @@
   pointer-events: auto;
   /* Tracks --panel-opacity like the rest of the chrome — the collapsed widget
      must not be more solid than the expanded one. */
-  background: rgba(18, 18, 22, var(--panel-opacity, 0.55));
+  background: rgba(var(--chrome-tint, 18, 18, 22), var(--panel-opacity, 0.55));
   backdrop-filter: blur(calc(18px * var(--panel-opacity, 0.55) / 0.55));
   border: 1px solid rgba(255, 255, 255, calc(0.08 * var(--panel-opacity, 0.55) / 0.55));
   box-shadow: 0 6px 26px rgba(0, 0, 0, calc(0.45 * var(--panel-opacity, 0.55) / 0.55));
   /* No default animation here — the widget-anim-*-collapse classes below own
      it entirely, keyed off the widgetCollapseAnimation setting. */
+}
+/* Artwork slot in the collapsed pill. Fixed size and clipped, so the two
+   layers of a track change can slide through it without resizing the pill or
+   spilling past its rounded edge. */
+.widget-pill-art {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 4px;
+}
+.widget-pill-slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1), opacity 420ms ease-out;
+}
+/* The new cover enters from the right, the old one leaves to the left, so a
+   change reads as forward motion rather than a cut. */
+.widget-pill-slide-entering {
+  transform: translateX(120%);
+  opacity: 0;
+}
+.widget-pill-slide-active {
+  transform: translateX(0);
+  opacity: 1;
+}
+.widget-pill-slide-leaving {
+  transform: translateX(-120%);
+  opacity: 0;
 }
 .widget-pill img {
   width: 18px;

@@ -95,11 +95,6 @@ export function registerIpc(ctx: IpcContext): void {
     repoll();
   });
 
-  ipcMain.handle('playback:toggleShuffle', async (_evt, enabled: boolean) => {
-    await provider().setShuffle(enabled);
-    repoll();
-  });
-
   // Immediate re-read of the playback position. The renderer extrapolates
   // lyric time from the last poll's progressMs plus a wall-clock delta, which
   // drifts across the 2.5s poll gap and breaks outright after a seek. This is

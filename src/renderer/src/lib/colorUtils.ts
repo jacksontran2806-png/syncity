@@ -158,3 +158,18 @@ export function contrastingLyricColor(bg: RGB, mode: 'transparent' | 'albumBlend
   // the background, then clamp its lightness until it clears WCAG AA.
   return clampForContrast(rotateHue(baseHue, SPLIT_COMPLEMENT_DEGREES), bg, 4.5);
 }
+
+/**
+ * The app chrome's fill, as a bare `r, g, b` triple for a CSS custom property
+ * so each rule can supply its own alpha.
+ *
+ * 'album' darkens and desaturates the cover's dominant colour rather than
+ * using it raw — a chrome panel has to stay a background, and plenty of covers
+ * are bright enough that their true colour would swallow white text. The
+ * result reads as tinted by the record without competing with it.
+ */
+export function chromeTintRgb(tint: 'neutral' | 'album', albumPrimary: RGB): string {
+  if (tint !== 'album') return '18, 18, 22'; // the app's own near-black
+  const { r, g, b } = moodyTintRgb(albumPrimary, 0.13, 0.55);
+  return `${r}, ${g}, ${b}`;
+}

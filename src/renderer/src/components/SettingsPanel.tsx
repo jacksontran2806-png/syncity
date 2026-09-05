@@ -157,15 +157,24 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }): JSX.Elemen
             label="Overlay mode"
             k="overlayMode"
             options={[
-              ['default', 'Default'],
               ['notch', 'Notch (top edge)'],
               ['free', 'Free (draggable)'],
             ]}
           />
-          {/* Default parks the widget top-centre, so the only placement knob it
-              has is how far down from the edge. Notch sits flush against the
-              edge by definition, so the offset has nothing to apply to there. */}
-          {settings.overlayMode === 'default' && (
+          {/* Chrome fill: the app's own near-black, or tinted from the cover
+              so the notch and panels take on the record's colour. */}
+          <Choice
+            label="Chrome colour"
+            k="chromeTint"
+            options={[
+              ['neutral', 'Neutral'],
+              ['album', 'Album colour'],
+            ]}
+          />
+          {/* Where Free mode parks the widget before it has ever been dragged.
+              Notch sits flush against the edge by definition, so the offset has
+              nothing to apply to there. */}
+          {settings.overlayMode === 'free' && (
             <Slider label="Distance from top" k="safeAreaOffsetPx" min={0} max={80} />
           )}
           {/* Free mode: place the whole widget anywhere on the screen, by

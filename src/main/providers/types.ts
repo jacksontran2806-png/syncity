@@ -21,7 +21,6 @@ export type ProviderTrack =
   | (Omit<NowPlaying, 'connected' | 'playing'> & {
       isPlaying: boolean;
       primaryArtist: string | null;
-      shuffle: boolean;
     })
   | null;
 
@@ -39,5 +38,4 @@ export interface NowPlayingProvider {
   skipNext(): Promise<void>;
   skipPrevious(): Promise<void>;
   playPause(play: boolean): Promise<void>;
-  setShuffle(enabled: boolean): Promise<void>;
 }

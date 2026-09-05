@@ -15,10 +15,17 @@ import { useEffect, useRef, useState } from 'react';
 // poll screen.getCursorScreenPoint() on an interval, and no IPC on the hover
 // path at all. (useClickThrough.ts already leans on the same guarantee.)
 
-/** How far down from the top edge the invisible reveal band reaches. */
-const TRIGGER_HEIGHT = 80;
-/** Horizontal slack either side of the notch, so a near-miss still opens it. */
-const TRIGGER_PAD_X = 24;
+/**
+ * Slack around the notch's own box, in px.
+ *
+ * Was a tall invisible band (80px down the screen, 24px either side) on the
+ * theory that a ~28px notch is hard to hit. In practice that opened the menu
+ * while the pointer was nowhere near anything visible — it felt like snagging
+ * on an invisible object, which is worse than an occasional near-miss. The
+ * zone now hugs what's actually drawn, with just enough margin to forgive a
+ * pixel or two of overshoot.
+ */
+const TRIGGER_PAD = 6;
 /** Grace period before collapsing. Deliberately short: the menu is meant to
  *  stay open only while you keep the pointer on it, so moving away should
  *  close it almost at once. It isn't zero because the reveal band and the
@@ -50,10 +57,10 @@ export function useNotchHover(enabled: boolean, ref: React.RefObject<HTMLElement
       // keeps the panel open while the cursor is inside it, rather than only
       // while it's in the original collapsed strip.
       const inside =
-        e.clientX >= rect.left - TRIGGER_PAD_X &&
-        e.clientX <= rect.right + TRIGGER_PAD_X &&
-        e.clientY >= 0 &&
-        e.clientY <= Math.max(TRIGGER_HEIGHT, rect.bottom);
+        e.clientX >= rect.left - TRIGGER_PAD &&
+        e.clientX <= rect.right + TRIGGER_PAD &&
+        e.clientY >= 0 && // the notch sits flush to the edge; nothing above it
+        e.clientY <= rect.bottom + TRIGGER_PAD;
 
       if (inside) {
         clearTimeout(closeTimer.current);

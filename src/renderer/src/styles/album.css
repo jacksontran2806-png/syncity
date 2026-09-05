@@ -58,11 +58,21 @@
   letter-spacing: -0.03em;
   text-align: center;
 }
+/* Was a flat #9a9a9a, which sat mid-grey against a blurred cover that is very
+   often also mid-grey — the name kept disappearing into its own album art.
+   Near-white at reduced opacity keeps it clearly secondary to the title while
+   staying legible on any backdrop, and the shadow carries it over the bright
+   covers where even white starts to wash out. */
 .album-artist {
   font-size: 15px;
-  font-weight: 400;
-  color: #9a9a9a;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.82);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.55);
   text-align: center;
+}
+/* The title sits on the same backdrop and needs the same protection. */
+.album-title {
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.5);
 }
 .album-transport {
   position: fixed;
@@ -72,7 +82,7 @@
   display: flex;
   align-items: center;
   gap: 22px;
-  background: rgba(15, 15, 15, 0.5);
+  background: rgba(var(--chrome-tint, 15, 15, 15), 0.5);
   backdrop-filter: blur(20px);
   pointer-events: auto;
   border: 1px solid rgba(255, 255, 255, 0.08);
