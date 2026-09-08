@@ -9,7 +9,12 @@
 .whats-new {
   position: fixed;
   right: 22px;
-  bottom: 22px;
+  /* Clears the taskbar. The overlay window covers display.bounds, taskbar
+     strip included (see main/windows.ts — an overlay wants the whole screen),
+     so a 22px offset put the card ON TOP of the tray and the clock. 68px sits
+     above a default Windows taskbar; a taller or auto-hidden one just gets a
+     slightly higher or lower card, which is harmless either way. */
+  bottom: 68px;
   width: 300px;
   /* Above fullscreen content (10), below the widget and settings boxes (20) —
      it is an announcement, not a thing to interact with first. */
