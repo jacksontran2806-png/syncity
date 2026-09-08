@@ -1,0 +1,71 @@
+# Packaging for a downloadable build. `npm run dist`.
+#
+# Two Windows targets, because they answer different questions:
+#   nsis     — a normal installer: Start Menu entry, desktop shortcut,
+#              uninstaller, and per-user install so it needs no admin rights.
+#   portable — one .exe that runs from anywhere (a USB stick, a Downloads
+#              folder) and installs nothing. Settings and the Spotify session
+#              still live in userData, so it is not a sandboxed copy.
+appId: com.syncity.app
+productName: Syncity
+copyright: Copyright © 2026 Syncity
+
+directories:
+  buildResources: resources
+  output: dist
+
+# Development dependencies are excluded automatically, and production ones are
+# added automatically — this only has to name the app's own build output.
+files:
+  - out/**
+  - package.json
+
+# Images the MAIN process loads by path at runtime. They must sit outside
+# app.asar: main/assets.ts resolves them from process.resourcesPath in a
+# packaged build precisely because reading them back out of the archive is the
+# thing that silently fails.
+extraResources:
+  - from: resources/app-icon.png
+    to: app-icon.png
+  - from: resources/tray-icon.png
+    to: tray-icon.png
+  - from: resources/tray-icon-light.png
+    to: tray-icon-light.png
+
+win:
+  # electron-builder derives the multi-resolution .ico from this PNG, so there
+  # is one icon to keep up to date rather than a generated binary in the repo.
+  icon: resources/app-icon.png
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+
+nsis:
+  # Not a one-click installer: the user gets to see where it is going and pick
+  # somewhere else, which for an app that sits in the tray all day is worth the
+  # extra click.
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  # Per-user, so installing never needs an administrator.
+  perMachine: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Syncity
+  artifactName: Syncity-Setup-${version}.${ext}
+
+portable:
+  artifactName: Syncity-${version}-portable.${ext}
+
+mac:
+  icon: resources/app-icon.png
+  category: public.app-category.music
+  target:
+    - dmg
+
+linux:
+  icon: resources/app-icon.png
+  category: Audio
+  target:
+    - AppImage

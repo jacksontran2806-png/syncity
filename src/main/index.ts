@@ -1,5 +1,23 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import path from 'node:path';
 import { app, session, desktopCapturer } from 'electron';
+
+// Credentials, in the order they get to win:
+//
+//   1. a real environment variable, or the repo's .env in development
+//   2. a .env the user drops in their own userData folder — the supported way
+//      to point a DOWNLOADED build at your own Spotify app without rebuilding
+//      it (docs/install.md)
+//   3. whatever was baked in at build time (electron.vite.config.ts)
+//
+// dotenv never overwrites a variable that is already set, so loading in this
+// order is what implements the precedence.
+dotenv.config();
+dotenv.config({ path: path.join(app.getPath('userData'), '.env') });
+
+/** Injected at build time — empty string when the build machine had none. */
+declare const __SPOTIFY_CLIENT_ID__: string;
+declare const __SPOTIFY_REDIRECT_URI__: string;
 
 // Last-resort net: this app runs quietly in the tray with nothing watching it,
 // so a crash is invisible until the user notices the overlay vanished. Anything
@@ -46,8 +64,33 @@ app.commandLine.appendSwitch('high-dpi-support', '1');
 // rendering feature) and is the standard fix for this exact symptom.
 app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
 
-const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
-const REDIRECT_URI = process.env.SPOTIFY_REDIRECT_URI || 'http://127.0.0.1:8888/callback';
+// Windows identity. Without it the taskbar, Alt-Tab and any notification we
+// ever raise attribute the app to "electron.app.Electron" and show Electron's
+// own icon. Must match the appId in electron-builder.yml, or a packaged build
+// and its shortcuts are treated as two different applications.
+app.setAppUserModelId('com.syncity.app');
+
+// One copy at a time. Two instances share a userData folder — the same
+// settings.json, the same Spotify token file, the same Chromium cache — and
+// register the same global hotkeys, so the second one comes up with its
+// shortcuts already taken and both write over each other. There is also no
+// window to look at: the app lives in the tray, so a user who clicks the
+// shortcut twice has no way to tell it is already running. Launching again
+// just shows the overlay of the copy that is already there.
+const isPrimaryInstance = app.requestSingleInstanceLock();
+if (!isPrimaryInstance) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    const win = getOverlayWindow();
+    if (!win || win.isDestroyed()) return;
+    if (!win.isVisible()) win.showInactive();
+  });
+}
+
+const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID || __SPOTIFY_CLIENT_ID__ || undefined;
+const REDIRECT_URI =
+  process.env.SPOTIFY_REDIRECT_URI || __SPOTIFY_REDIRECT_URI__ || 'http://127.0.0.1:8888/callback';
 
 // Must precede the first userData read below: the LyriGlow -> Syncity rename
 // moved the profile directory, and this carries the old settings and Spotify
@@ -124,6 +167,12 @@ function enableSystemAudioCapture(): void {
 }
 
 app.whenReady().then(() => {
+  // quit() before ready is asynchronous, so a losing second instance still
+  // gets its ready event — and without this it would spend that moment
+  // grabbing global hotkeys and the Chromium cache directory out from under
+  // the copy that is actually running.
+  if (!isPrimaryInstance) return;
+
   spotifyProvider = createSpotifyProvider(CLIENT_ID, REDIRECT_URI);
   appleMusicProvider = createAppleMusicProvider(process.env.APPLE_MUSIC_DEVELOPER_TOKEN);
 

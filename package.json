@@ -9,7 +9,10 @@
     "build": "tsc --noEmit -p tsconfig.web.json && tsc --noEmit -p tsconfig.node.json && electron-vite build",
     "start": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.web.json && tsc --noEmit -p tsconfig.node.json",
-    "test": "node tests/run.mjs"
+    "test": "node tests/run.mjs",
+    "icons": "node scripts/make-icons.mjs",
+    "dist": "npm run build && electron-builder --win",
+    "dist:dir": "npm run build && electron-builder --win --dir"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
@@ -23,10 +26,13 @@
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
     "electron": "^32.0.0",
+    "electron-builder": "^26.15.3",
     "electron-vite": "^2.3.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "typescript": "^5.6.2",
     "vite": "^5.4.6"
-  }
+  },
+  "description": "Lyrics and now-playing overlay for Spotify.",
+  "author": "Jackson Tran"
 }
