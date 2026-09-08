@@ -18,14 +18,15 @@ album art.
 portable build, with the setup walkthrough.
 
 [docs/install.md](docs/install.md) covers the same ground in the repo: first
-run, the tray icon, Spotify sign-in, and pointing it at your own Spotify app
-when the bundled one hits Spotify's 25-listener cap.
+run, the tray icon, and registering the Spotify app it signs in through —
+which every install does, because Spotify admits only 25 hand-entered users to
+an unreviewed application, so no shippable app could cover everyone.
 
 ## Develop
 
 ```bash
 npm install
-cp .env.example .env      # add your Spotify client ID
+cp .env.example .env      # optional: a client ID here saves setting one in the UI
 npm run dev
 ```
 

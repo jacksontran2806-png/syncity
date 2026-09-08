@@ -1,7 +1,7 @@
-// Reads .env at BUILD time, so the values below can be baked into a packaged
-// build. Nothing secret goes in: Spotify's desktop flow is Auth Code + PKCE,
-// where the client ID is a public identifier and there is no client secret to
-// leak (see main/spotify/auth.ts).
+// Reads .env at BUILD time. Only the redirect URI is baked in — the client ID
+// deliberately is not: every install authenticates through a Spotify
+// application the user registers themselves (see main/spotify/auth.ts), so
+// there is nothing for a build to carry.
 import 'dotenv/config';
 import { resolve } from 'path';
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite';
@@ -11,11 +11,9 @@ export default defineConfig({
   main: {
     plugins: [externalizeDepsPlugin()],
     define: {
-      // A packaged app has no repo .env next to it and no reason to expect the
-      // user to make one, so the build's credentials travel with it. At
-      // runtime an actual environment variable — or a .env the user drops in
-      // their own userData folder — still wins over these; see main/index.ts.
-      __SPOTIFY_CLIENT_ID__: JSON.stringify(process.env.SPOTIFY_CLIENT_ID ?? ''),
+      // The loopback address the Spotify login comes back to. Baked so a build
+      // can move it off the default port if something else is using 8888; it
+      // identifies nothing and is the same for everyone otherwise.
       __SPOTIFY_REDIRECT_URI__: JSON.stringify(process.env.SPOTIFY_REDIRECT_URI ?? ''),
     },
   },

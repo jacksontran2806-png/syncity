@@ -21,35 +21,40 @@ that warning. **More info → Run anyway.**
 
 ## First run
 
-Syncity has no taskbar window. It lives in the tray — look for the three-bar
-icon next to the clock. Right-click it for Show/Hide Overlay, Settings and
-Quit.
+Syncity has no taskbar window. It lives in the tray — look for its icon next to
+the clock. Right-click it for Show/Hide Overlay, Settings and Quit.
 
-Open Settings and press **Connect Spotify**. That opens your browser once, you
-approve the app, and the window closes itself. Playback control needs Spotify
-Premium; showing what is playing does not.
+On first launch it opens Settings by itself, because there is one thing to do
+before anything works.
 
-## Using your own Spotify app
+## Registering a Spotify app
 
-The build carries a Spotify client ID so it works out of the box — but Spotify
-only admits 25 people to an application that hasn't passed its quota review. If
-**Connect Spotify** fails with *"user not registered"*, that cap is why, and
-the fix is your own Spotify app: free, no review, about three minutes.
+Syncity signs in through a Spotify application registered in your own name.
+Spotify only lets an application that hasn't been through its review admit 25
+users, each entered by hand in a dashboard by that application's owner — so
+there is no app that could be shipped with Syncity to cover everyone who
+downloads it. One used to be, and it failed on the first press for anyone who
+wasn't on the list.
 
-Settings → **Connection** → **Use my own Spotify app** walks you through it:
+Doing it yourself takes about three minutes, costs nothing, and is better on
+its own terms: your own rate limit instead of one shared with every other
+listener, and your playback only ever between your computer and Spotify.
+
+Settings → **Connection** walks you through it:
 
 1. Open the Spotify dashboard and press **Create app**.
 2. Name it anything, tick **Web API**.
 3. Paste `http://127.0.0.1:8888/callback` into **Redirect URIs** — copy it from
    the setup panel rather than typing it; this is the step people get wrong.
 4. Save, open the app's Settings, copy the **Client ID**.
-5. Paste it into Syncity and press Save, then **Connect Spotify**.
+5. Paste it into Syncity, press Save, then **Connect Spotify**.
+
+Your browser opens once, you approve it, and the tab closes itself. Playback
+control needs Spotify Premium; showing what is playing does not.
 
 A client ID is a public identifier, not a password. Syncity signs in with Auth
-Code + PKCE, which has no client secret at all.
-
-Changing the client ID signs you out, because the stored session belongs to the
-application that issued it.
+Code + PKCE, which has no client secret at all. Changing it signs you out,
+because the stored session belongs to the application that issued it.
 
 ## Updates
 

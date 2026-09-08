@@ -2,18 +2,24 @@ import { useState } from 'react';
 import { useStore } from '../store';
 
 /**
- * Connecting Spotify, including the escape hatch when the build's own Spotify
- * application is full.
+ * Connecting Spotify. For a new install this is the whole of setup, and it is
+ * written as such rather than as a repair.
  *
- * WHY THIS EXISTS AS A UI AT ALL: Spotify caps an application that hasn't
- * passed quota review at 25 authorised listeners, and there is no way for this
- * app to raise that on a user's behalf. Past that number the only fix is for
- * the user to register a Spotify application of their own — three minutes,
- * free, no review — and point Syncity at it. That used to mean hand-writing a
- * .env file into %APPDATA%, which is a wall for anyone who doesn't already
- * know what a .env file is. The whole flow lives here instead, with the
- * redirect URI copyable, because typing it wrong is the one step everybody
- * gets wrong and the resulting Spotify error page explains nothing.
+ * WHY EVERY USER DOES THIS: Syncity signs in through a Spotify application,
+ * and an application that hasn't passed Spotify's quota review admits only the
+ * users its owner has typed into the dashboard by name and email — 25 of them,
+ * chosen individually. So a shipped application cannot cover the people who
+ * download the app; it can only cover the handful its author added by hand.
+ * Shipping one anyway meant a stranger's first press failed with "user not
+ * registered", which reads as a broken app rather than a step not yet taken.
+ *
+ * Registering their own costs three minutes and nothing, and is better on its
+ * own terms: their own listener allowance, their own rate limit rather than a
+ * shared one, and their listening never travelling through an application
+ * somebody else controls. The copy says that instead of apologising.
+ *
+ * The redirect URI is copyable because typing it wrong is the step everybody
+ * gets wrong, and the error Spotify shows for it explains nothing.
  */
 export function SpotifySetup(): JSX.Element {
   const status = useStore((s) => s.spotifyStatus);
@@ -24,8 +30,9 @@ export function SpotifySetup(): JSX.Element {
   const [draftId, setDraftId] = useState(status.clientId);
   const [connecting, setConnecting] = useState(false);
   const [note, setNote] = useState('');
-  // Opens on its own when there is no client ID at all — that is the one case
-  // where the user cannot get anywhere without these steps.
+  // Open whenever there is nothing to connect with — which for a new install
+  // is immediately, because these steps ARE the setup. Once a client ID is
+  // saved they fold away, since nobody needs to read them twice.
   const [showSteps, setShowSteps] = useState(!status.clientIdConfigured);
 
   const flash = (text: string) => {
@@ -46,7 +53,7 @@ export function SpotifySetup(): JSX.Element {
 
   const saveClientId = async () => {
     await updateSettings({ spotifyClientId: draftId.trim() });
-    flash(draftId.trim() ? 'Saved — now press Connect Spotify' : 'Cleared — using the built-in app');
+    flash(draftId.trim() ? 'Saved — now press Connect Spotify' : 'Cleared');
   };
 
   const copyRedirect = async () => {
@@ -65,7 +72,7 @@ export function SpotifySetup(): JSX.Element {
         <div className="settings-control">
           <span className={`spotify-dot ${status.authed ? 'is-on' : ''}`} />
           <span className="settings-hint">
-            {status.authed ? 'Connected' : status.clientIdConfigured ? 'Not connected' : 'Needs setup'}
+            {status.authed ? 'Connected' : status.clientIdConfigured ? 'Not connected' : 'Not set up'}
           </span>
           {status.authed ? (
             <button type="button" className="text-btn" onClick={() => void disconnectSpotify()}>
@@ -84,25 +91,24 @@ export function SpotifySetup(): JSX.Element {
         </div>
       </div>
 
-      <div className="settings-row">
-        <span className="settings-label" />
-        <div className="settings-control">
-          <button type="button" className="text-btn" onClick={() => setShowSteps((v) => !v)}>
-            {showSteps ? 'Hide setup' : 'Use my own Spotify app'}
-          </button>
-          {note && <span className="settings-hint">{note}</span>}
+      {status.clientIdConfigured && (
+        <div className="settings-row">
+          <span className="settings-label" />
+          <div className="settings-control">
+            <button type="button" className="text-btn" onClick={() => setShowSteps((v) => !v)}>
+              {showSteps ? 'Hide setup' : 'Change Spotify app'}
+            </button>
+            {note && <span className="settings-hint">{note}</span>}
+          </div>
         </div>
-      </div>
+      )}
 
       {showSteps && (
         <div className="spotify-steps">
-          {/* Said plainly, because the alternative is a user concluding the app
-              is broken when it is Spotify's listener cap doing exactly what it
-              is designed to do. */}
           <p className="spotify-note">
-            Syncity ships with a Spotify app that only 25 people can use at once. If Connect fails
-            with <em>“user not registered”</em>, register your own — it is free and takes about three
-            minutes.
+            Syncity connects through a Spotify app registered in your own name. It takes about three
+            minutes, costs nothing, and means your listening is only ever between your computer and
+            Spotify.
           </p>
 
           <ol>
@@ -140,6 +146,7 @@ export function SpotifySetup(): JSX.Element {
                   Save
                 </button>
               </div>
+              {note && !status.clientIdConfigured && <div className="settings-hint">{note}</div>}
             </li>
           </ol>
 

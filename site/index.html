@@ -140,38 +140,36 @@
             </p>
           </li>
           <li>
-            <h3>Find it in the tray</h3>
+            <h3>Register a Spotify app</h3>
             <p>
-              Syncity has no taskbar window. Look for the three-bar icon beside the clock — right
-              click it for the overlay, settings and quit.
+              Syncity opens its settings on first run and walks you through this. Create an app at
+              <a href="https://developer.spotify.com/dashboard">developer.spotify.com/dashboard</a>,
+              name it anything, tick <strong>Web API</strong>, and add
+              <code>http://127.0.0.1:8888/callback</code> to its redirect URIs. Then copy the app's
+              Client ID into Syncity. Three minutes, free, once.
             </p>
           </li>
           <li>
-            <h3>Connect Spotify</h3>
+            <h3>Connect</h3>
             <p>
-              Open Settings and press <strong>Connect Spotify</strong>. Your browser opens once,
-              you approve it, and the tab closes itself.
+              Press <strong>Connect Spotify</strong>. Your browser opens once, you approve it, and
+              the tab closes itself. Syncity then lives in the tray — the icon beside the clock.
             </p>
           </li>
         </ol>
 
         <div class="aside">
-          <h3>If Connect says “user not registered”</h3>
+          <h3>Why you register your own app</h3>
           <p>
-            Spotify only admits 25 people to an app that has not been through its review, and the
-            copy bundled with Syncity fills up. Registering your own takes about three minutes and
-            costs nothing — Settings walks you through it, and it is the same five steps:
+            Spotify lets an app that hasn't been through its review admit only the 25 people its
+            owner has entered by hand in a dashboard. So there is no single app that could cover
+            everyone who downloads this — shipping one would just fail for you on the first press.
           </p>
-          <ol class="substeps">
-            <li>Create an app at <a href="https://developer.spotify.com/dashboard">developer.spotify.com/dashboard</a>.</li>
-            <li>Name it anything. Tick <strong>Web API</strong>.</li>
-            <li>Add <code>http://127.0.0.1:8888/callback</code> to its redirect URIs.</li>
-            <li>Copy the Client ID from the app's settings.</li>
-            <li>Paste it into Syncity, save, and connect.</li>
-          </ol>
           <p class="aside-note">
-            A Client ID is a public identifier, not a password. Syncity signs in with PKCE, which
-            has no secret to store.
+            Registering your own is better anyway: your own rate limit rather than one shared with
+            every other listener, and your playback only ever travelling between your computer and
+            Spotify. A Client ID is a public identifier, not a password — Syncity signs in with
+            PKCE, which has no secret to store.
           </p>
         </div>
       </section>
@@ -179,6 +177,14 @@
       <section class="questions" id="questions">
         <h2>Questions</h2>
         <dl class="qa">
+          <div>
+            <dt>Why do I have to make a Spotify app?</dt>
+            <dd>
+              Because Spotify won't let one app serve everyone. An unreviewed app admits 25
+              hand-entered users, so the only workable answer is that each person registers their
+              own. Syncity walks you through it on first run, and you never touch it again.
+            </dd>
+          </div>
           <div>
             <dt>Do I need Spotify Premium?</dt>
             <dd>

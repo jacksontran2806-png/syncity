@@ -2,21 +2,15 @@ import dotenv from 'dotenv';
 import path from 'node:path';
 import { app, session, desktopCapturer } from 'electron';
 
-// Credentials, in the order they get to win:
-//
-//   1. a real environment variable, or the repo's .env in development
-//   2. a .env the user drops in their own userData folder — the supported way
-//      to point a DOWNLOADED build at your own Spotify app without rebuilding
-//      it (docs/install.md)
-//   3. whatever was baked in at build time (electron.vite.config.ts)
-//
-// dotenv never overwrites a variable that is already set, so loading in this
-// order is what implements the precedence.
+// Development convenience only: the repo's .env, then one the user may have
+// put in their own userData folder. Neither is how a normal install is
+// configured — that happens in Settings, and is stored with the settings.
+// dotenv never overwrites a variable that is already set, so this order is
+// the precedence.
 dotenv.config();
 dotenv.config({ path: path.join(app.getPath('userData'), '.env') });
 
 /** Injected at build time — empty string when the build machine had none. */
-declare const __SPOTIFY_CLIENT_ID__: string;
 declare const __SPOTIFY_REDIRECT_URI__: string;
 
 // Last-resort net: this app runs quietly in the tray with nothing watching it,
@@ -96,14 +90,22 @@ const REDIRECT_URI =
 /**
  * Which Spotify application this install talks to.
  *
- * The user's own comes first, because it is the only one that can be wrong in
- * a way they can fix: a build's bundled client ID stops working for them the
- * moment that app hits Spotify's 25-listener development cap, and pasting
- * their own into Settings is the way out. Environment variables stay ahead of
- * the baked value for development.
+ * There is no fallback, on purpose. Builds used to carry a client ID, and it
+ * could not work: an app that hasn't passed Spotify's quota review runs in
+ * Development Mode, which admits ONLY the users its owner has typed into the
+ * dashboard by name and email, up to 25. A stranger who downloaded Syncity was
+ * never on that list, so the bundled ID failed on their first press while
+ * implying the app was broken. It also pooled every user onto one
+ * application's rate limit, so the few who WERE on the list throttled each
+ * other.
+ *
+ * Every install now authenticates through an application its own user
+ * registered: their own allowance, their own quota, and their listening never
+ * passing through anybody else's app. The environment variable stays for
+ * development.
  */
 function clientId(): string | undefined {
-  return settings.spotifyClientId.trim() || process.env.SPOTIFY_CLIENT_ID || __SPOTIFY_CLIENT_ID__ || undefined;
+  return settings.spotifyClientId.trim() || process.env.SPOTIFY_CLIENT_ID || undefined;
 }
 
 // Must precede the first userData read below: the LyriGlow -> Syncity rename

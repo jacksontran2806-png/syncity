@@ -42,6 +42,19 @@ export function App(): JSX.Element {
     root.style.setProperty('--font-body', spec.body);
   }, [settings.fontTheme]);
 
+  // First run opens Settings by itself. Every install has to register a Spotify
+  // app before anything works (see SpotifySetup), and the alternative is a
+  // collapsed pill on an empty desktop with no indication that a step is
+  // waiting inside it.
+  useEffect(() => {
+    void window.syncity.spotifyStatus().then((status) => {
+      if (!status.clientIdConfigured) {
+        useStore.getState().setViewMode('island');
+        useStore.getState().setPanel('settings');
+      }
+    });
+  }, []);
+
   useEffect(() => {
     const offNowPlaying = window.syncity.onNowPlaying(setNowPlaying);
     const offLyrics = window.syncity.onLyrics(setLyrics);
