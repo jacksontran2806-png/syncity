@@ -14,6 +14,11 @@ directories:
   buildResources: resources
   output: dist
 
+# Strips the ~40 MB of Chromium translations Electron ships by default. It runs
+# as a hook because `electronLanguages` does nothing on Windows, which is the
+# target that actually ships. See scripts/prune-locales.mjs.
+afterPack: scripts/prune-locales.mjs
+
 # Development dependencies are excluded automatically, and production ones are
 # added automatically — this only has to name the app's own build output.
 files:
