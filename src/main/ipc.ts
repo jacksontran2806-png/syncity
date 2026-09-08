@@ -99,7 +99,9 @@ export function registerIpc(ctx: IpcContext): void {
   // lyric time from the last poll's progressMs plus a wall-clock delta, which
   // drifts across the 2.5s poll gap and breaks outright after a seek. This is
   // what the lyrics view's Resync button calls.
-  ipcMain.handle('playback:sync', () => loop.tick());
+  // force: a Resync that lands while a routine poll is in flight must not be
+  // answered with that poll's position — it was read before the user asked.
+  ipcMain.handle('playback:sync', () => loop.tick({ force: true }));
 
   // --- app ---
   ipcMain.handle('app:quit', () => app.quit());

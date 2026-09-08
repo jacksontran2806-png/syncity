@@ -33,8 +33,15 @@ export interface LoopDeps {
 
 export interface NowPlayingLoop {
   /** One poll now, out of band. Also the Resync path from the lyrics view.
-   *  Reschedules the next poll, so calling it never leaves two timers running. */
-  tick: () => Promise<void>;
+   *  Reschedules the next poll, so calling it never leaves two timers running.
+   *
+   *  `force` is for a poll the USER asked for: an ordinary tick that lands
+   *  while another is in flight is dropped (the answer on its way is as good
+   *  as the one it would fetch), but a Resync must not be — the in-flight
+   *  answer was read from the service BEFORE the user pressed the button, so
+   *  returning it is exactly the stale position they were trying to replace.
+   *  A forced tick waits that poll out and then reads the position again. */
+  tick: (opts?: { force?: boolean }) => Promise<void>;
   start: () => void;
   stop: () => void;
   /** Forget the current track so the next tick re-runs the track-change work
@@ -52,9 +59,10 @@ export function createNowPlayingLoop({ provider, colorOverrideEnabled, send }: L
   let timer: ReturnType<typeof setTimeout> | null = null;
   let lastTrackId: string | null | undefined = null;
   let stopped = true;
-  /** Guards against two polls in flight at once, which an out-of-band tick()
-   *  during a slow request would otherwise cause. */
-  let inFlight = false;
+  /** The poll currently out, if any. Guards against two in flight at once —
+   *  which an out-of-band tick() during a slow request would otherwise cause —
+   *  and gives a forced tick something to wait on. */
+  let inFlight: Promise<void> | null = null;
   const schedule: PollState = {
     playing: false,
     msUntilTrackEnd: null,
@@ -110,13 +118,21 @@ export function createNowPlayingLoop({ provider, colorOverrideEnabled, send }: L
   }
 
   /** Runs the poll, then schedules the next one from whatever it learned. */
-  async function tick(): Promise<void> {
-    if (inFlight) return; // a poll is already out; its own completion reschedules
-    inFlight = true;
+  async function tick(opts?: { force?: boolean }): Promise<void> {
+    if (inFlight) {
+      // A poll is already out; its own completion reschedules. Only a forced
+      // tick (Resync) is worth a second request, and only after this one is
+      // done — two concurrent reads would race to set the anchor, and the
+      // loser could be the newer of the two.
+      if (!opts?.force) return;
+      await inFlight.catch(() => {});
+    }
+    const poll = pollOnce();
+    inFlight = poll;
     try {
-      await pollOnce();
+      await poll;
     } finally {
-      inFlight = false;
+      if (inFlight === poll) inFlight = null;
       // While throttled, sleep out the window exactly rather than waking on
       // the normal cadence just to return early — no requests either way, but
       // this way the loop is genuinely idle for the duration.

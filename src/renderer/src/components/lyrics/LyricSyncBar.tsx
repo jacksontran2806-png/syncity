@@ -1,9 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../../store';
+import { progressAt } from '../../lib/playbackClock';
 
 /** Nudge step. Bracket keys do the same thing without aiming at a button. */
 const NUDGE_MS = 250;
 const FLASH_MS = 1400;
+/** Under this, the fresh read agreed with where the clock already was, and
+ *  saying "+0.03s" would read as noise. Roughly one poll's worth of jitter. */
+const IN_SYNC_MS = 120;
 
 /**
  * Lyric timing trim.
@@ -38,9 +42,27 @@ export function LyricSyncBar(): JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [updateSettings]);
 
+  // Reports the correction it actually made, rather than a flat "Resynced".
+  // Most of the time the clock was already right and the honest answer is "in
+  // sync" — without that the button looks broken every time it works, which
+  // is precisely the case it can't distinguish from doing nothing at all.
   const resync = async () => {
-    await window.syncity.syncPlayback();
-    setFlash('Resynced');
+    const before = progressAt(useStore.getState().anchor, Date.now());
+    let message: string;
+    try {
+      await window.syncity.syncPlayback();
+      // The new position arrives as a separate nowPlaying event, not as the
+      // invoke's return value; yield a frame so the store has it.
+      await new Promise(requestAnimationFrame);
+      const delta = progressAt(useStore.getState().anchor, Date.now()) - before;
+      message =
+        Math.abs(delta) < IN_SYNC_MS
+          ? 'In sync'
+          : `${delta > 0 ? '+' : '−'}${(Math.abs(delta) / 1000).toFixed(2)}s`;
+    } catch {
+      message = 'Failed';
+    }
+    setFlash(message);
     clearTimeout(flashTimer.current);
     flashTimer.current = setTimeout(() => setFlash(''), FLASH_MS);
   };
