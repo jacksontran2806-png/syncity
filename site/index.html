@@ -28,6 +28,7 @@
       </a>
       <nav>
         <a href="#what">What it does</a>
+        <a href="#whats-new">What's new</a>
         <a href="#setup">Setup</a>
         <a href="#questions">Questions</a>
         <a href="https://github.com/jacksontran2806-png/syncity">Source</a>
@@ -126,6 +127,56 @@
             </dd>
           </div>
         </dl>
+      </section>
+
+      <!-- Release notes, in the same register as the rest of the page: what
+           changed for the person running it, with the numbers it actually
+           moved, rather than a commit log. Newest first; older versions stay
+           listed so an upgrade can be placed in time. -->
+      <section class="news" id="whats-new">
+        <h2>What's new</h2>
+        <div class="releases">
+          <article>
+            <div class="release-head">
+              <h3>0.1.1</h3>
+              <time datetime="2026-09-08">8 September 2026</time>
+            </div>
+            <p class="release-lede">
+              A weight-loss release. Nothing looks different and nothing moved — the app is
+              simply smaller on disk and quieter when it is sitting there doing nothing, which
+              is most of the time.
+            </p>
+            <ul>
+              <li>
+                <strong>45 MB smaller once installed</strong>, 275 MB down to 230 MB, and the
+                download drops from 81 MB to 73 MB. Gone: 54 Chromium translations the app never
+                showed, an image library carried purely to read album colours, and two packages
+                that were being shipped twice over.
+              </li>
+              <li>
+                <strong>Album colours are read by Electron itself now.</strong> Same palettes,
+                none of the extra weight.
+              </li>
+              <li>
+                <strong>Less battery when idle.</strong> The pill's spectrum stops drawing while
+                the overlay is hidden, and the lyric clock stops recalculating a position that
+                isn't moving while playback is paused.
+              </li>
+              <li>
+                <strong>System audio is only captured while it's being used.</strong> The
+                visualizer's capture used to run from launch to quit; it now starts when the pill
+                is on screen with something playing, and stops shortly after it isn't.
+              </li>
+            </ul>
+          </article>
+          <article>
+            <div class="release-head">
+              <h3>0.1.0</h3>
+              <time datetime="2026-09-08">8 September 2026</time>
+            </div>
+            <p class="release-lede">First public build.</p>
+          </article>
+        </div>
       </section>
 
       <section class="setup" id="setup">

@@ -349,6 +349,7 @@ section h2 {
 }
 
 .what,
+.news,
 .setup,
 .questions {
   padding: clamp(48px, 7vw, 88px) var(--gutter);
@@ -394,6 +395,59 @@ section h2 {
   margin: 0;
   max-width: var(--measure);
   color: var(--muted);
+}
+
+/* ---------- What's new ---------- */
+
+/* Version numbers sit in the lyric colour, so the page's one moving colour
+   marks the thing a returning visitor is scanning for. Older entries keep
+   their heading and lose their detail — enough to place a release in time
+   without turning the page into a changelog. */
+.releases {
+  display: grid;
+  gap: 0;
+}
+.releases article {
+  padding: 24px 0;
+  border-top: 1px solid var(--line);
+}
+.releases article:last-child {
+  border-bottom: 1px solid var(--line);
+}
+.release-head {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+.release-head h3 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  color: var(--lyric);
+  transition: color 900ms ease;
+}
+.release-head time {
+  color: var(--muted);
+  font-size: 14.5px;
+}
+.release-lede {
+  margin: 10px 0 0;
+  color: var(--muted);
+  max-width: var(--measure);
+}
+.releases ul {
+  margin: 14px 0 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 9px;
+  color: var(--muted);
+  max-width: var(--measure);
+}
+.releases ul strong {
+  color: var(--text);
+  font-weight: 500;
 }
 
 /* ---------- Setup ---------- */
