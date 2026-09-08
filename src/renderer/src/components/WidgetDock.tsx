@@ -26,7 +26,7 @@ export function WidgetDock({ expandSignal }: Props): JSX.Element {
   const boxRef = useRef<HTMLDivElement | null>(null);
   // Same dwell for both modes — it is one setting, and a pointer resting on
   // the widget means the same thing wherever the widget happens to be.
-  const notchHovered = useNotchHover(isNotch, boxRef, settings.hoverExpandDelayMs);
+  const notch = useNotchHover(isNotch, boxRef, settings.hoverExpandDelayMs);
 
   // Keyed on the track id so a genuine song change animates, while the poll
   // re-sending the same track every few seconds does not.
@@ -34,6 +34,9 @@ export function WidgetDock({ expandSignal }: Props): JSX.Element {
 
   const collapsed = useAutoHide(settings.autoHideWidget && !settings.widgetLocked, expandSignal) && panel === 'none';
   const [hovered, setHovered] = useState(false);
+  /** Free mode's half of the dwell indicator — the notch keeps its own inside
+   *  useNotchHover, since that hook owns its timer. */
+  const [arming, setArming] = useState(false);
   const hoverTimer = useRef<ReturnType<typeof setTimeout>>();
   // While a drag is in progress the pointer necessarily sits over the pill
   // for as long as the gesture lasts — without this, a slow drag would trip
@@ -48,8 +51,15 @@ export function WidgetDock({ expandSignal }: Props): JSX.Element {
   const handleHoverChange = useCallback((isHovered: boolean) => {
     if (draggingRef.current) return;
     clearTimeout(hoverTimer.current);
-    if (isHovered) hoverTimer.current = setTimeout(() => setHovered(true), hoverDelayRef.current);
-    else setHovered(false);
+    setArming(isHovered);
+    if (isHovered) {
+      hoverTimer.current = setTimeout(() => {
+        setArming(false);
+        setHovered(true);
+      }, hoverDelayRef.current);
+    } else {
+      setHovered(false);
+    }
   }, []);
   // Mirrors showPill so handleDragStateChange (a stable callback) can read the
   // current value without depending on it and getting recreated every render.
@@ -58,6 +68,7 @@ export function WidgetDock({ expandSignal }: Props): JSX.Element {
     draggingRef.current = isDragging;
     if (isDragging) {
       clearTimeout(hoverTimer.current);
+      setArming(false); // no countdown while dragging — nothing is going to open
       setHovered(false); // keep the pill a pill for the whole gesture
     } else if (!moved && showPillRef.current) {
       // A real click on the pill (no meaningful movement): expand right away,
@@ -74,7 +85,7 @@ export function WidgetDock({ expandSignal }: Props): JSX.Element {
   // reveal band is entered, regardless of the auto-hide setting or the idle
   // timer. The lock button still wins, and an open panel still holds it open.
   const showPill = isNotch
-    ? !notchHovered && !settings.widgetLocked && panel === 'none'
+    ? !notch.open && !settings.widgetLocked && panel === 'none'
     : collapsed && !hovered;
   showPillRef.current = showPill;
 
@@ -112,7 +123,12 @@ export function WidgetDock({ expandSignal }: Props): JSX.Element {
     >
       {showPill ? (
         <div
-          className={`widget-pill widget-anim-${settings.widgetCollapseAnimation}-collapse`}
+          className={`widget-pill widget-anim-${settings.widgetCollapseAnimation}-collapse ${
+            (isNotch ? notch.arming : arming) ? 'is-arming' : ''
+          }`}
+          // Drives the fill's duration, so the line finishes exactly as the
+          // widget opens however the dwell is set.
+          style={{ '--arm-duration': `${settings.hoverExpandDelayMs}ms` } as React.CSSProperties}
           data-hitregion
           title={
             isNotch

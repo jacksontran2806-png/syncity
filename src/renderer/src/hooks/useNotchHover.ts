@@ -34,6 +34,14 @@ import { HOVER_CLOSE_DELAY_MS } from '../lib/hoverTiming';
  */
 const TRIGGER_PAD = 6;
 
+export interface NotchHoverState {
+  /** The notch is open. */
+  open: boolean;
+  /** The dwell is counting down: the pointer is in the band but the widget
+   *  has not opened yet. */
+  arming: boolean;
+}
+
 export function useNotchHover(
   enabled: boolean,
   ref: React.RefObject<HTMLElement | null>,
@@ -41,8 +49,11 @@ export function useNotchHover(
    *  the hook stays a pure input-to-boolean and both modes are visibly driven
    *  by the same value in WidgetDock. */
   openDelayMs: number
-): boolean {
+): NotchHoverState {
   const [active, setActive] = useState(false);
+  /** True while the dwell is counting down — what the notch draws its fill
+   *  from, so the wait is visible rather than being a second of nothing. */
+  const [arming, setArming] = useState(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout>>();
   const openTimer = useRef<ReturnType<typeof setTimeout>>();
 
@@ -51,6 +62,7 @@ export function useNotchHover(
       clearTimeout(closeTimer.current);
       clearTimeout(openTimer.current);
       setActive(false);
+      setArming(false);
       return;
     }
 
@@ -60,6 +72,7 @@ export function useNotchHover(
       // elsewhere accumulates its way into opening the menu.
       clearTimeout(openTimer.current);
       openTimer.current = undefined;
+      setArming(false);
       clearTimeout(closeTimer.current);
       closeTimer.current = setTimeout(() => setActive(false), HOVER_CLOSE_DELAY_MS);
     };
@@ -83,8 +96,10 @@ export function useNotchHover(
         // Restarting on every mousemove would mean the menu only ever opened
         // for a pointer held perfectly still.
         if (active || openTimer.current) return;
+        setArming(true);
         openTimer.current = setTimeout(() => {
           openTimer.current = undefined;
+          setArming(false);
           setActive(true);
         }, openDelayMs);
       } else {
@@ -104,5 +119,5 @@ export function useNotchHover(
     };
   }, [enabled, ref, active, openDelayMs]);
 
-  return active;
+  return { open: active, arming };
 }

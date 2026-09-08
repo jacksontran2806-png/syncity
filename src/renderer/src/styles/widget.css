@@ -111,6 +111,61 @@
 }
 
 
+/* ---------- Dwell indicator ----------
+   The widget opens on a sustained hover (settings.hoverExpandDelayMs, 0.7-2s),
+   and a wait that long with no feedback is indistinguishable from the app
+   ignoring you — which is exactly what a longer delay felt like before this.
+   A hairline fills across the bottom of the pill for the length of the dwell
+   and completes as the widget opens, so the pause reads as a countdown rather
+   than as nothing happening.
+
+   It is drawn INSIDE the pill's bottom edge rather than under it: the notch
+   sits flush to the top of the screen with the pill's own edge as the only
+   thing on screen, and a line hanging below it would read as a separate
+   object. */
+.widget-pill {
+  position: relative;
+}
+.widget-pill::after {
+  content: '';
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: 3px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0;
+  /* Scaled from the left edge, so the fill reads as travelling across rather
+     than growing out of the middle. */
+  transform: scaleX(0);
+  transform-origin: left center;
+  pointer-events: none;
+}
+.widget-pill.is-arming::after {
+  animation: widget-dwell-fill var(--arm-duration, 1500ms) linear both;
+}
+@keyframes widget-dwell-fill {
+  from {
+    opacity: 0.5;
+    transform: scaleX(0);
+  }
+  to {
+    opacity: 0.85;
+    transform: scaleX(1);
+  }
+}
+/* Reduced motion still gets the indicator: it is the only signal that a hover
+   has been registered, and removing it would leave the wait unexplained. What
+   it loses is the sweep — the line simply appears for the duration instead. */
+@media (prefers-reduced-motion: reduce) {
+  .widget-pill.is-arming::after {
+    animation: none;
+    opacity: 0.7;
+    transform: scaleX(1);
+  }
+}
+
 /* ---------- Widget expand/collapse animations ----------
    Both the pill and the full widget only ever MOUNT when the other one was
    just showing (WidgetDock swaps between them, never keeps both around), so
