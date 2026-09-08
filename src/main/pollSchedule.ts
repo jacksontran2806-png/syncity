@@ -24,8 +24,18 @@ const BURST_MS = 1_200;
 export const BURST_POLLS = 3;
 
 /** Steady playback. The anchor carries the position between these, so this is
- *  about noticing changes made elsewhere, not about sync accuracy. */
-const PLAYING_MS = 20_000;
+ *  NOT about sync accuracy — it's the ceiling on how long the app can keep
+ *  showing the wrong song after the user changes tracks in Spotify itself.
+ *
+ *  This was 20s, chosen purely for the request budget, and that made the app
+ *  feel broken: skip a track and the title took up to twenty seconds to catch
+ *  up, against half a second in the old fixed-2s build. The budget argument
+ *  was also written before the app could handle a 429 at all — it now reads
+ *  Retry-After and goes genuinely quiet for the stated window
+ *  (nowPlayingLoop's quietUntil), so a burst of requests costs a measured
+ *  pause instead of an escalating failure. Perceived latency is worth more
+ *  than the requests saved, so this sits just above the old cadence. */
+const PLAYING_MS = 2_500;
 
 /** Poll again just after the current track is due to end, so the next track is
  *  picked up promptly however slow the baseline is. */
@@ -36,8 +46,12 @@ const TRACK_END_MARGIN_MS = 750;
 const MIN_MS = 1_000;
 
 /** Nothing playing: the only thing we're waiting for is the user starting
- *  something somewhere else, so ease off the longer that stays true. */
-const IDLE_STEPS_MS = [8_000, 15_000, 30_000];
+ *  something somewhere else, so ease off the longer that stays true — but the
+ *  FIRST few steps have to stay prompt, because "press play in Spotify and
+ *  watch the overlay" is exactly when someone is looking straight at it. The
+ *  long tail is where the savings are: an app left open all afternoon spends
+ *  almost all of its idle time at the last step, not the first. */
+const IDLE_STEPS_MS = [3_000, 5_000, 10_000, 20_000, 30_000];
 
 /** Consecutive failures (not rate limits — those carry their own window). */
 const ERROR_STEPS_MS = [5_000, 10_000, 20_000, 40_000, 60_000];
