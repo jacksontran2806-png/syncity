@@ -1,21 +1,22 @@
-// Renders the app's icons from source, rather than keeping binaries nobody can
-// edit. `npm run icons`.
+// Derives every icon the app ships from one source artwork. `npm run icons`.
 //
-// The icon is drawn as HTML/CSS and captured through Electron — the same
-// renderer the app itself paints in — so the mark can use the real gradient,
-// the real radii and the real palette constants instead of an approximation
-// hand-encoded into a PNG. Re-running this after a palette change keeps the
-// icon in step with the app.
+// resources/icon-source.png is the master: the gradient S on its dark
+// squircle, sitting on a black field with room around it. Everything below is
+// produced from it rather than exported by hand, so replacing the master is a
+// one-command change and the tray icon can never drift from the app icon.
+//
+// The work happens on a canvas inside Electron's renderer. capturePage was the
+// obvious tool and the wrong one: it hands back PHYSICAL pixels, so the icons
+// came out sized by the build machine's display scaling. A canvas is exact.
 //
 // Outputs:
-//   resources/app-icon.png   1024px — window/installer icon; electron-builder
-//                            derives the .ico from it at package time.
-//   resources/tray-icon.png  64px, transparent, white — the tray sits at 16px
-//                            on a dark taskbar, where colour and detail both
-//                            disappear, so it's a plain glyph with heavier
-//                            proportions.
-//   resources/tray-icon-light.png  the same glyph in near-black, for a light
-//                            taskbar. Windows does not invert tray icons.
+//   resources/app-icon.png   1024px — window and installer icon;
+//                            electron-builder derives the .ico from it.
+//   resources/tray-icon.png  64px — the same mark, small. The whole dark tile
+//                            rather than a monochrome glyph: the tile holds up
+//                            on a light taskbar and the glowing S holds up on
+//                            a dark one, so one file covers both themes.
+//   site/icon.png            512px — the site's favicon and link preview.
 
 import { execFileSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
@@ -26,137 +27,110 @@ import { tmpdir } from 'node:os';
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..');
 
-// The mark: three stacked lyric lines with the middle one active — the lyrics
-// view's own stage, reduced to something that still reads at 16 pixels.
-// Anything more literal (a note, a microphone) says "music player" and nothing
-// about what this app actually shows.
-const APP_ICON_HTML = `
-<style>
-  html, body { margin: 0; width: 1024px; height: 1024px; background: transparent; }
-  .icon {
-    position: relative;
-    width: 1024px; height: 1024px;
-    border-radius: 232px;              /* Windows/macOS squircle proportions */
-    background:
-      radial-gradient(120% 120% at 22% 12%, rgba(124, 92, 255, 0.55), transparent 58%),
-      radial-gradient(110% 110% at 86% 90%, rgba(255, 92, 205, 0.42), transparent 60%),
-      radial-gradient(120% 120% at 92% 22%, rgba(79, 172, 254, 0.30), transparent 62%),
-      linear-gradient(160deg, #17161f 0%, #0b0a0f 100%);
-    box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.09);
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 54px;
-  }
-  .line { border-radius: 999px; }
-  /* Sung already / coming up: present but receded, the way the stacked lyric
-     styles render their inactive rows. */
-  .line--past   { width: 322px; height: 58px; background: rgba(255,255,255,0.30); }
-  .line--next   { width: 404px; height: 58px; background: rgba(255,255,255,0.24); }
-  /* The active line, carrying the app's own palette left to right. */
-  .line--active {
-    width: 560px; height: 86px;
-    background: linear-gradient(90deg, #8f6bff 0%, #c46cff 46%, #ff6fb8 100%);
-    box-shadow: 0 0 70px rgba(180, 108, 255, 0.55);
-  }
-</style>
-<div class="icon">
-  <div class="line line--past"></div>
-  <div class="line line--active"></div>
-  <div class="line line--next"></div>
-</div>
-`;
-
-// Tray: no gradient, no glow, no colour. At 16px a gradient turns to mud and a
-// tinted glyph disappears against whatever accent colour the taskbar is using.
-// Bars are proportionally fatter than the app icon's so they survive the
-// downscale to a couple of pixels each.
-//
-// Two of them, because Windows does NOT invert a tray icon for you: a white
-// glyph is invisible on a light taskbar and a dark one is invisible on a dark
-// taskbar. tray.ts picks between these by the system theme and re-picks when
-// it changes.
-const trayHtml = (ink) => `
-<style>
-  html, body { margin: 0; width: 64px; height: 64px; background: transparent; }
-  .tray {
-    width: 64px; height: 64px;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 7px;
-  }
-  .line { border-radius: 999px; background: ${ink}; }
-  .line--past   { width: 28px; height: 7px; opacity: 0.55; }
-  .line--active { width: 46px; height: 10px; }
-  .line--next   { width: 34px; height: 7px; opacity: 0.55; }
-</style>
-<div class="tray">
-  <div class="line line--past"></div>
-  <div class="line line--active"></div>
-  <div class="line line--next"></div>
-</div>
-`;
-
-// HTML goes to real files rather than data: URLs — a data: URL loads fine as
-// the first navigation and then fails with ERR_FAILED on the next window,
-// which is not worth chasing when a temp file always works.
-const pages = [
-  { html: APP_ICON_HTML, size: 1024, out: join(root, 'resources', 'app-icon.png') },
-  // Named for the taskbar they belong on, not for the ink they're drawn in.
-  { html: trayHtml('#ffffff'), size: 64, out: join(root, 'resources', 'tray-icon.png') },
-  { html: trayHtml('#17161f'), size: 64, out: join(root, 'resources', 'tray-icon-light.png') },
+const source = join(root, 'resources', 'icon-source.png');
+const outputs = [
+  { size: 1024, out: join(root, 'resources', 'app-icon.png') },
+  { size: 64, out: join(root, 'resources', 'tray-icon.png') },
+  { size: 512, out: join(root, 'site', 'icon.png') },
 ];
-const jobs = pages.map((page, i) => {
-  const htmlPath = join(tmpdir(), `syncity-icon-${i}.html`);
-  writeFileSync(htmlPath, page.html);
-  return { htmlPath, size: page.size, out: page.out };
-});
 
-// The renderer half: a throwaway Electron main script. Written out rather than
-// kept as a file because it is not part of the app and has no reason to be
-// loadable by anything else.
+// The host page is a real file, not a data: URL. A data: navigation here never
+// settles — loadURL's promise simply never resolves — which is the same
+// failure a data: URL gave the previous version of this script.
+const hostPage = join(tmpdir(), 'syncity-icon-host.html');
+
 const mainScript = `
 const { app, BrowserWindow } = require('electron');
 const { writeFileSync } = require('node:fs');
+const { pathToFileURL } = require('node:url');
 
-const jobs = ${JSON.stringify(jobs)};
+const source = ${JSON.stringify(source)};
+const outputs = ${JSON.stringify(outputs)};
 
 app.disableHardwareAcceleration();
 
 app.whenReady().then(async () => {
-  // ONE window, resized between jobs. A second BrowserWindow created after the
-  // first is destroyed fails its very first navigation with ERR_FAILED on
-  // Windows — reusing the window sidesteps it and is less work anyway.
-  const win = new BrowserWindow({
-    width: jobs[0].size,
-    height: jobs[0].size,
-    show: false,
-    frame: false,
-    transparent: true,          // keeps the rounded corners actually rounded
-    backgroundColor: '#00000000',
-  });
+  const win = new BrowserWindow({ width: 200, height: 200, show: false });
+  await win.loadFile(${JSON.stringify(hostPage)});
+  const sourceUrl = pathToFileURL(source).href;
 
-  for (const job of jobs) {
-    win.setContentSize(job.size, job.size);
-    await win.loadFile(job.htmlPath);
-    // One frame after load: capturePage on a window that has not painted yet
-    // comes back empty.
-    await new Promise((r) => setTimeout(r, 250));
-    const captured = await win.webContents.capturePage();
-    // capturePage works in PHYSICAL pixels, so on a 125% display a 1024px
-    // window captures at 1280. Resize back to the size actually asked for —
-    // an icon that is 1280px because of the build machine's DPI is a bug that
-    // only shows up on someone else's machine.
-    const image = captured.getSize().width === job.size
-      ? captured
-      : captured.resize({ width: job.size, height: job.size, quality: 'best' });
-    writeFileSync(job.out, image.toPNG());
-    console.log('wrote ' + job.out + ' (' + image.getSize().width + 'px)');
+  for (const job of outputs) {
+    const dataUrl = await win.webContents.executeJavaScript(
+      'renderIcon(' + JSON.stringify(sourceUrl) + ',' + job.size + ')'
+    );
+    writeFileSync(job.out, Buffer.from(dataUrl.split(',')[1], 'base64'));
+    console.log('wrote ' + job.out + ' (' + job.size + 'px)');
   }
 
   win.destroy();
   app.quit();
 });
 `;
+
+// Defined as its own string so the page function stays readable rather than
+// being escaped three levels deep.
+const pageFunction = `
+window.renderIcon = async (sourceUrl, size) => {
+  const img = new Image();
+  img.src = sourceUrl;
+  await img.decode();
+
+  const probe = document.createElement('canvas');
+  probe.width = img.width;
+  probe.height = img.height;
+  const pctx = probe.getContext('2d', { willReadFrequently: true });
+  pctx.drawImage(img, 0, 0);
+  const { data } = pctx.getImageData(0, 0, img.width, img.height);
+
+  // Where the artwork actually is. The master sits on pure black and the tile
+  // itself is very dark but never black, so a low luma threshold separates
+  // them — measured rather than hardcoded, because a fixed crop breaks the
+  // moment the master is re-exported with a different margin.
+  const THRESHOLD = 14;
+  let minX = img.width, minY = img.height, maxX = 0, maxY = 0;
+  for (let y = 0; y < img.height; y++) {
+    for (let x = 0; x < img.width; x++) {
+      const i = (y * img.width + x) * 4;
+      const luma = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
+      if (luma <= THRESHOLD || data[i + 3] < 8) continue;
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+    }
+  }
+
+  // Squared off the crop's own centre: the glow bleeds further on one axis
+  // than the other, and a non-square crop would stretch the tile.
+  const w = maxX - minX + 1;
+  const h = maxY - minY + 1;
+  // Pulled in slightly: the threshold catches the glow that bleeds past the
+  // tile, and cropping to THAT leaves the tile floating inside a dark ring
+  // instead of filling the icon. This lands its edge on the canvas edge.
+  const OVERSCAN = 0.955;
+  const side = Math.max(w, h) * OVERSCAN;
+  const sx = minX + w / 2 - side / 2;
+  const sy = minY + h / 2 - side / 2;
+
+  const out = document.createElement('canvas');
+  out.width = size;
+  out.height = size;
+  const ctx = out.getContext('2d');
+  // Re-cut the rounded corners so what falls outside them is transparent
+  // rather than the master's black field, which would read as black corners
+  // on every light surface Windows puts the icon on. The radius matches the
+  // proportion the master was drawn at.
+  ctx.beginPath();
+  ctx.roundRect(0, 0, size, size, size * 0.226);
+  ctx.clip();
+  ctx.drawImage(img, sx, sy, side, side, 0, 0, size, size);
+  return out.toDataURL('image/png');
+};
+`;
+
+// The page carries the render function itself, so the main script only has to
+// call it — no escaping a function body through two levels of string.
+writeFileSync(hostPage, `<meta charset="utf-8"><script>${pageFunction}</script>`);
 
 const scriptPath = join(root, 'node_modules', '.cache-make-icons.cjs');
 writeFileSync(scriptPath, mainScript);

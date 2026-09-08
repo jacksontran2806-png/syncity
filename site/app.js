@@ -6,11 +6,11 @@
 // covers, so what the page demonstrates is what the app does, not an
 // impression of it.
 const PALETTES = [
-  { name: 'Deep purple cover', cover: '#7c5cff', lyric: '#d8c2ff', ground: '#0e0a16', raised: '#171126' },
-  { name: 'Warm red cover', cover: '#dc3c28', lyric: '#f4cdc4', ground: '#150a08', raised: '#241310' },
-  { name: 'Green cover', cover: '#28b45a', lyric: '#c3e5cf', ground: '#08130d', raised: '#0f2118' },
-  { name: 'Blue cover', cover: '#1e5ac8', lyric: '#c4d6f6', ground: '#080e1b', raised: '#101a2c' },
-  { name: 'Amber cover', cover: '#f0d228', lyric: '#f6e4b4', ground: '#151005', raised: '#241c0c' },
+  { name: 'Deep purple cover', cover: '#7c5cff', lyric: '#d8c2ff' },
+  { name: 'Warm red cover', cover: '#dc3c28', lyric: '#f4cdc4' },
+  { name: 'Green cover', cover: '#28b45a', lyric: '#c3e5cf' },
+  { name: 'Blue cover', cover: '#1e5ac8', lyric: '#c4d6f6' },
+  { name: 'Amber cover', cover: '#f0d228', lyric: '#f6e4b4' },
 ];
 
 const HOLD_MS = 3600;
@@ -33,10 +33,10 @@ let timer = null;
 function show(i) {
   index = i % PALETTES.length;
   const p = PALETTES[index];
+  // Only the two the demo owns. The page's ground and chrome belong to the
+  // brand and stay where they are.
   root.style.setProperty('--cover', p.cover);
   root.style.setProperty('--lyric', p.lyric);
-  root.style.setProperty('--ground', p.ground);
-  root.style.setProperty('--raised', p.raised);
   swatches.forEach((el, n) => el.classList.toggle('is-playing', n === index));
 }
 

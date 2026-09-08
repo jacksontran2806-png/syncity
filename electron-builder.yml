@@ -29,8 +29,6 @@ extraResources:
     to: app-icon.png
   - from: resources/tray-icon.png
     to: tray-icon.png
-  - from: resources/tray-icon-light.png
-    to: tray-icon-light.png
 
 win:
   # electron-builder derives the multi-resolution .ico from this PNG, so there

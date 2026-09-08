@@ -34,16 +34,28 @@
 }
 
 :root {
-  /* Moved by app.js as the album changes. The defaults are the first palette,
-     so the page is correct before a single line of script runs. */
-  --ground: #0e0a16;
-  --raised: #171126;
+  /* Taken from the app icon: a near-black with a blue-violet cast, and the
+     mark's own blue -> violet -> pink gradient. These do NOT move. The album
+     cycle below changes the lyric and the wash behind it — the part of the
+     page that is standing in for the product — while the chrome stays the
+     brand's, so the site doesn't recolour itself out of its own identity
+     every four seconds. */
+  --ground: #08070e;
+  --raised: #14121f;
+  --line: rgba(255, 255, 255, 0.08);
+  --text: #ece9f6;
+  --muted: #9a94ad;
+
+  --brand-blue: #8fb6ff;
+  --brand-violet: #b49bff;
+  --brand-pink: #f5b8d0;
+  --brand: linear-gradient(104deg, var(--brand-blue) 0%, var(--brand-violet) 52%, var(--brand-pink) 100%);
+  --glow: #7b6cff;
+
+  /* Moved by app.js as the album changes. Defaults are the first palette, so
+     the page is right before a line of script runs. */
   --lyric: #d8c2ff;
   --cover: #7c5cff;
-
-  --text: #ece8f4;
-  --muted: #9d95ae;
-  --line: rgba(255, 255, 255, 0.09);
 
   --measure: 62ch;
   --gutter: clamp(20px, 5vw, 64px);
@@ -65,9 +77,6 @@ body {
   font-size: 16px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
-  /* The one place the album change is felt page-wide. Matches the app's own
-     600ms colour transition. */
-  transition: background-color 900ms ease;
 }
 
 a {
@@ -122,30 +131,11 @@ code {
   letter-spacing: -0.01em;
   text-decoration: none;
 }
-/* The app's icon, rebuilt in three divs: three lyric lines with the middle one
-   lit. Same mark, no image request. */
 .wordmark-mark {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  width: 22px;
-}
-.wordmark-mark i {
-  height: 3px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.32);
-}
-.wordmark-mark i:first-child {
-  width: 60%;
-}
-.wordmark-mark i:nth-child(2) {
-  width: 100%;
-  height: 4px;
-  background: var(--lyric);
-  transition: background-color 900ms ease;
-}
-.wordmark-mark i:last-child {
-  width: 74%;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  display: block;
 }
 .nav nav {
   display: flex;
@@ -170,7 +160,9 @@ code {
   text-align: center;
   /* A wash of the current cover colour, so the album change is felt behind the
      type rather than only in it. */
-  background: radial-gradient(120% 70% at 50% 0%, color-mix(in oklab, var(--cover) 22%, transparent), transparent 70%);
+  background:
+    radial-gradient(100% 60% at 50% 0%, color-mix(in oklab, var(--cover) 24%, transparent), transparent 68%),
+    radial-gradient(85% 70% at 50% 8%, color-mix(in oklab, var(--glow) 16%, transparent), transparent 72%);
   transition: background 900ms ease;
 }
 
@@ -268,13 +260,11 @@ code {
   border-color: rgba(255, 255, 255, 0.24);
 }
 .btn--primary {
-  background: var(--lyric);
+  background: var(--brand);
   border-color: transparent;
-  /* Reads against whatever the current lyric colour is, since that is the
-     button's fill and it moves. */
-  color: #14101c;
+  color: #0f0d16;
   font-weight: 600;
-  transition: transform 160ms ease, background-color 900ms ease;
+  box-shadow: 0 10px 40px color-mix(in oklab, var(--glow) 34%, transparent);
 }
 .fineprint {
   margin: 16px 0 0;
@@ -309,8 +299,7 @@ code {
   width: 26px;
   height: 26px;
   border-radius: 7px;
-  background: linear-gradient(135deg, var(--cover), color-mix(in oklab, var(--lyric) 70%, var(--cover)));
-  transition: background 900ms ease;
+  background: var(--brand);
   flex: none;
 }
 .pill-meta {

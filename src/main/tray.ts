@@ -1,15 +1,17 @@
-import { Tray, Menu, nativeImage, app, nativeTheme } from 'electron';
+import { Tray, Menu, nativeImage, app } from 'electron';
 import { getOverlayWindow } from './windows';
 import { resourcePath } from './assets';
 
 let tray: Tray | null = null;
 
-/** Windows does not invert a tray icon to suit the taskbar, so the app ships
- *  both inks and picks by theme — a white glyph is invisible on a light
- *  taskbar, and vice versa. */
+/** The app icon at tray size. It carries its own dark tile, which is what lets
+ *  one file serve both taskbar themes: the tile holds its shape against a
+ *  light taskbar, and the mark on it glows against a dark one. A monochrome
+ *  glyph would need two inks and a theme listener to swap them. */
 function trayImage(): Electron.NativeImage {
-  const file = nativeTheme.shouldUseDarkColors ? 'tray-icon.png' : 'tray-icon-light.png';
-  return nativeImage.createFromPath(resourcePath(file)).resize({ width: 16, height: 16 });
+  // The 64px cut rather than the 1024px one: downscaling by 4x keeps the
+  // mark's edges cleaner than dropping straight from 1024 to 16.
+  return nativeImage.createFromPath(resourcePath('tray-icon.png')).resize({ width: 16, height: 16 });
 }
 
 /** Builds the tray icon and its menu. The app has no taskbar presence, so this
@@ -17,10 +19,6 @@ function trayImage(): Electron.NativeImage {
 export function createTray(onOpenSettings: () => void): Tray {
   tray = new Tray(trayImage());
   tray.setToolTip('Syncity');
-  // The taskbar can change colour under a running app (theme switch, or the
-  // scheduled light/dark change Windows offers), and a tray icon that only
-  // matched at launch would quietly disappear.
-  nativeTheme.on('updated', () => tray?.setImage(trayImage()));
 
   const rebuildMenu = () => {
     const win = getOverlayWindow();
