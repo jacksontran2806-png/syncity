@@ -4,10 +4,11 @@
 // state in index.ts. That keeps the "what can IPC touch?" answer readable:
 // it's this interface, and nothing else.
 
-import { app, ipcMain, screen } from 'electron';
+import { app, ipcMain, screen, shell } from 'electron';
 import type { AppSettings } from '../shared/types';
 import type { NowPlayingProvider } from './providers/types';
 import type { NowPlayingLoop } from './nowPlayingLoop';
+import { clearTokens } from './spotify/tokens';
 import {
   moveOverlayToDisplay,
   registerClickThroughIpc,
@@ -21,7 +22,15 @@ export interface IpcContext {
   patchSettings: (partial: Partial<AppSettings>) => AppSettings;
   provider: () => NowPlayingProvider;
   loop: NowPlayingLoop;
-  clientIdConfigured: boolean;
+  /** The Spotify application in force right now — the user's own if they have
+   *  set one, otherwise the build's. Resolved per call, never captured: the
+   *  user can change it from Settings at any time. */
+  clientId: () => string | undefined;
+  /** Shown in Settings so the user can copy it into their Spotify app's
+   *  allowed redirect URIs, which is the step everyone gets wrong. */
+  redirectUri: string;
+  /** Pushes connection state to the renderer after something changes it. */
+  sendSpotifyStatus: () => void;
   /** Binds/releases the global Escape accelerator as fullscreen views open
    *  and close — see hotkeys.ts setEscapeCapture for why it's scoped. */
   setFullscreenView: (active: boolean) => void;
@@ -37,17 +46,37 @@ export function registerIpc(ctx: IpcContext): void {
   registerClickThroughIpc();
 
   // --- auth ---
-  ipcMain.handle('spotify:status', () => ({
+  const spotifyStatus = () => ({
     authed: provider().isAuthed(),
-    clientIdConfigured: ctx.clientIdConfigured,
-  }));
+    clientIdConfigured: !!ctx.clientId(),
+    clientId: getSettings().spotifyClientId,
+    redirectUri: ctx.redirectUri,
+  });
+
+  ipcMain.handle('spotify:status', spotifyStatus);
 
   ipcMain.handle('spotify:connect', async () => {
     await provider().login();
     loop.forgetTrack();
     void loop.tick();
+    ctx.sendSpotifyStatus();
     return { authed: true };
   });
+
+  // Sign out. Separate from clearing the client ID: someone switching Spotify
+  // accounts wants to keep the application they registered.
+  ipcMain.handle('spotify:disconnect', () => {
+    clearTokens();
+    loop.forgetTrack();
+    ctx.sendSpotifyStatus();
+    void loop.tick();
+    return spotifyStatus();
+  });
+
+  // Opens the Spotify dashboard in the real browser. A link inside a
+  // click-through always-on-top overlay is not something to make the user
+  // hunt for, and shell.openExternal is the only way out of it.
+  ipcMain.handle('spotify:openDashboard', () => shell.openExternal('https://developer.spotify.com/dashboard'));
 
   // --- settings ---
   ipcMain.handle('settings:get', () => getSettings());

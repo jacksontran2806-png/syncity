@@ -35,3 +35,17 @@ export function loadTokens(): TokenSet | null {
 export function saveTokens(tokens: TokenSet): void {
   fs.writeFileSync(tokenPath(), JSON.stringify(tokens, null, 2));
 }
+
+/** Forgets the stored session.
+ *
+ *  Called on sign-out, and forced whenever the client ID changes: tokens are
+ *  issued to one Spotify application, so keeping them across a change would
+ *  leave the app holding credentials the new application cannot refresh, which
+ *  reads as a mysterious "connected but nothing works". */
+export function clearTokens(): void {
+  try {
+    fs.rmSync(tokenPath(), { force: true });
+  } catch {
+    // Nothing to forget, or the file is already gone.
+  }
+}

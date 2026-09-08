@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useStore } from '../store';
 import { Choice, Row, Section, Slider, TextButton, Toggle } from './SettingsControls';
 import { ColorWheelPicker } from './ColorWheelPicker';
+import { SpotifySetup } from './SpotifySetup';
 import { FONT_THEMES } from '../lib/fontThemes';
 import type { FontTheme } from '@shared/types';
 
@@ -41,6 +42,12 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }): JSX.Elemen
       {/* data-nodrag: this region scrolls, and grabbing its scrollbar must
           scroll the list, not drag the whole window. The header is the handle. */}
       <div className="settings-body" data-nodrag>
+        {/* First, and deliberately: nothing else in this panel does anything
+            until Spotify is connected. */}
+        <Section title="Connection">
+          <SpotifySetup />
+        </Section>
+
         <Section title="Color">
           <Toggle label="Override album color" k="colorOverrideEnabled" />
           {settings.colorOverrideEnabled && (

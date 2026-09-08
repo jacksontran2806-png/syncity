@@ -34,6 +34,7 @@ import type { NowPlayingProvider } from './providers/types';
 import { createSpotifyProvider } from './providers/spotifyProvider';
 import { createAppleMusicProvider } from './providers/appleMusic';
 import { loadSettings, saveSettings } from './settingsStore';
+import { clearTokens } from './spotify/tokens';
 import { createNowPlayingLoop } from './nowPlayingLoop';
 import { registerIpc } from './ipc';
 import { registerHotkeys, setEscapeCapture, unregisterHotkeys } from './hotkeys';
@@ -88,9 +89,21 @@ if (!isPrimaryInstance) {
   });
 }
 
-const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID || __SPOTIFY_CLIENT_ID__ || undefined;
 const REDIRECT_URI =
   process.env.SPOTIFY_REDIRECT_URI || __SPOTIFY_REDIRECT_URI__ || 'http://127.0.0.1:8888/callback';
+
+/**
+ * Which Spotify application this install talks to.
+ *
+ * The user's own comes first, because it is the only one that can be wrong in
+ * a way they can fix: a build's bundled client ID stops working for them the
+ * moment that app hits Spotify's 25-listener development cap, and pasting
+ * their own into Settings is the way out. Environment variables stay ahead of
+ * the baked value for development.
+ */
+function clientId(): string | undefined {
+  return settings.spotifyClientId.trim() || process.env.SPOTIFY_CLIENT_ID || __SPOTIFY_CLIENT_ID__ || undefined;
+}
 
 // Must precede the first userData read below: the LyriGlow -> Syncity rename
 // moved the profile directory, and this carries the old settings and Spotify
@@ -145,7 +158,39 @@ function patchSettings(partial: Partial<AppSettings>): AppSettings {
   if ('launchOnStartup' in partial) app.setLoginItemSettings({ openAtLogin: settings.launchOnStartup });
   if ('windowMode' in partial) applyWindowMode(settings.windowMode, settings.displayId);
 
+  // A different Spotify application means the stored tokens belong to an app
+  // we are no longer using — they cannot be refreshed, so keeping them would
+  // leave the UI claiming to be connected while every request failed. Drop
+  // them, rebuild the provider around the new ID, and tell the renderer, which
+  // is what flips the widget back to "Connect Spotify".
+  if ('spotifyClientId' in partial) {
+    clearTokens();
+    rebuildSpotifyProvider();
+    loop.forgetTrack();
+    void loop.tick();
+    sendSpotifyStatus();
+  }
+
   return settings;
+}
+
+/** Rebuilds the Spotify provider around the current client ID. The provider
+ *  captures its ID at construction, so changing the setting means building a
+ *  new one rather than mutating the old. */
+function rebuildSpotifyProvider(): void {
+  spotifyProvider = createSpotifyProvider(clientId(), REDIRECT_URI);
+}
+
+/** Pushes connection state to the renderer. Sent on change rather than only
+ *  answered on request, so the widget stops showing "Connect Spotify" the
+ *  moment a login finishes instead of on the next thing that happens to ask. */
+function sendSpotifyStatus(): void {
+  send('spotify:status', {
+    authed: spotifyProvider.isAuthed(),
+    clientIdConfigured: !!clientId(),
+    clientId: settings.spotifyClientId,
+    redirectUri: REDIRECT_URI,
+  });
 }
 
 /** Loopback audio capture for the pill's spectrum visualizer, without a screen-picker
@@ -173,7 +218,7 @@ app.whenReady().then(() => {
   // the copy that is actually running.
   if (!isPrimaryInstance) return;
 
-  spotifyProvider = createSpotifyProvider(CLIENT_ID, REDIRECT_URI);
+  rebuildSpotifyProvider();
   appleMusicProvider = createAppleMusicProvider(process.env.APPLE_MUSIC_DEVELOPER_TOKEN);
 
   enableSystemAudioCapture();
@@ -190,7 +235,9 @@ app.whenReady().then(() => {
     patchSettings,
     provider,
     loop,
-    clientIdConfigured: !!CLIENT_ID,
+    clientId,
+    redirectUri: REDIRECT_URI,
+    sendSpotifyStatus,
     setFullscreenView: (active) => setEscapeCapture(active, () => send('ui:escape')),
   });
   registerHotkeys({ getSettings: () => settings, patchSettings, send });

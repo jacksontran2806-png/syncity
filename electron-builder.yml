@@ -53,10 +53,14 @@ nsis:
   createDesktopShortcut: true
   createStartMenuShortcut: true
   shortcutName: Syncity
-  artifactName: Syncity-Setup-${version}.${ext}
+  # No version in the filename, deliberately: it makes
+  # github.com/.../releases/latest/download/Syncity-Setup.exe a permanent
+  # link, so the website's download button never has to be edited when a new
+  # version ships. The version lives in the release title and in the app.
+  artifactName: Syncity-Setup.${ext}
 
 portable:
-  artifactName: Syncity-${version}-portable.${ext}
+  artifactName: Syncity-Portable.${ext}
 
 mac:
   icon: resources/app-icon.png

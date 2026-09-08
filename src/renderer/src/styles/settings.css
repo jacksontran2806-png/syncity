@@ -230,3 +230,80 @@
 }
 
 
+
+/* ---------- Spotify setup ----------
+   The connect state and, folded under it, the steps for registering a Spotify
+   app of one's own. Laid out as a numbered list rather than a settings row per
+   step: this is instructions to follow once, not knobs to adjust, and it reads
+   as such. See components/SpotifySetup.tsx for why it exists. */
+.spotify-setup {
+  padding-bottom: 4px;
+}
+/* Connection state at a glance, before any label is read. */
+.spotify-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.28);
+  flex: none;
+}
+.spotify-dot.is-on {
+  background: #1ed760; /* Spotify's own green — this dot means THAT service */
+  box-shadow: 0 0 8px rgba(30, 215, 96, 0.6);
+}
+.spotify-steps {
+  margin: 4px 0 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  font-size: 11.5px;
+  line-height: 1.55;
+}
+.spotify-steps ol {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.spotify-steps strong {
+  font-weight: 600;
+}
+.spotify-note {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+}
+.spotify-note--quiet {
+  margin-top: 10px;
+  font-size: 11px;
+  opacity: 0.5;
+}
+/* The redirect URI and the client ID field: both are copy/paste targets, so
+   they get the same shape — a wide monospace box with its action beside it. */
+.spotify-copy {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 5px;
+}
+.spotify-copy code,
+.spotify-input {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-family: var(--font-mono, 'Cascadia Mono', Consolas, ui-monospace, monospace);
+  font-size: 11px;
+  color: #fff;
+  /* The URI is longer than the panel is wide; let it be selected and scrolled
+     rather than wrapped mid-path, where a copy by hand goes wrong. */
+  overflow-x: auto;
+  white-space: nowrap;
+  user-select: text;
+}
+.spotify-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}

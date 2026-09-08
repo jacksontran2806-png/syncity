@@ -14,9 +14,12 @@ album art.
 
 ## Install
 
-Grab the installer or the portable build from `dist/`, or see
-[docs/install.md](docs/install.md) for the details — first run, tray icon,
-Spotify sign-in, and how to point it at your own Spotify app.
+**[syncity-app.vercel.app](https://syncity-app.vercel.app)** — installer and
+portable build, with the setup walkthrough.
+
+[docs/install.md](docs/install.md) covers the same ground in the repo: first
+run, the tray icon, Spotify sign-in, and pointing it at your own Spotify app
+when the bundled one hits Spotify's 25-listener cap.
 
 ## Develop
 
@@ -34,6 +37,9 @@ npm run dev
 | `npm run build` | Typecheck and bundle into `out/` |
 | `npm run dist` | Windows installer + portable exe into `dist/` |
 | `npm run icons` | Redraw the app and tray icons |
+
+The download site is `site/` — plain HTML, no build step, deployed to Vercel
+with `vercel deploy --prod` from that directory.
 
 Playback control requires Spotify Premium. Reading what is playing does not.
 Apple Music support is stubbed but not functional — see

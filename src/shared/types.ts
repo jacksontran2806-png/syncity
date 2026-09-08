@@ -106,6 +106,19 @@ export interface WidgetPosition {
   yPct: number;
 }
 
+/** What the renderer knows about the Spotify connection. */
+export interface SpotifyStatus {
+  authed: boolean;
+  /** Whether ANY client ID is in force — the user's, the environment's, or the
+   *  one the build shipped with. */
+  clientIdConfigured: boolean;
+  /** The user's own, if they have set one. Empty means the build's is in use.
+   *  Public identifier, not a secret — see AppSettings.spotifyClientId. */
+  clientId: string;
+  /** The loopback URL the user has to register on their Spotify app. */
+  redirectUri: string;
+}
+
 export interface DisplayInfo {
   id: number;
   label: string;
@@ -113,6 +126,15 @@ export interface DisplayInfo {
 }
 
 export interface AppSettings {
+  /** The Spotify application this install authenticates against.
+   *
+   *  Empty means "use whatever the build shipped with". A downloaded build
+   *  carries one, but Spotify caps an app that hasn't passed quota review at
+   *  25 authorised listeners — so anyone past that number has to point Syncity
+   *  at an app of their own, and this is where that goes. It is a public
+   *  identifier, not a secret: the desktop flow is Auth Code + PKCE, which has
+   *  no client secret at all. */
+  spotifyClientId: string;
   lyricsBackground: LyricsBackground;
   /** Background color for lyricsBackground: 'custom'. */
   lyricsCustomColor: RGB;
@@ -186,6 +208,7 @@ export interface LyricLine {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
+  spotifyClientId: '',
   lyricsBackground: 'transparent',
   lyricsCustomColor: { r: 18, g: 18, b: 26 },
   albumBlendColorCount: 2,

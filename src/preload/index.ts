@@ -1,10 +1,13 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { AppSettings, DisplayInfo, AlbumPalette, LyricLine, NowPlaying } from '../shared/types';
+import type { AppSettings, DisplayInfo, AlbumPalette, LyricLine, NowPlaying, SpotifyStatus } from '../shared/types';
 
 const api = {
-  spotifyStatus: (): Promise<{ authed: boolean; clientIdConfigured: boolean }> =>
-    ipcRenderer.invoke('spotify:status'),
+  spotifyStatus: (): Promise<SpotifyStatus> => ipcRenderer.invoke('spotify:status'),
   spotifyConnect: (): Promise<{ authed: boolean }> => ipcRenderer.invoke('spotify:connect'),
+  spotifyDisconnect: (): Promise<SpotifyStatus> => ipcRenderer.invoke('spotify:disconnect'),
+  /** Opens developer.spotify.com in the user's browser — step one of pointing
+   *  Syncity at their own Spotify app. */
+  spotifyOpenDashboard: (): Promise<void> => ipcRenderer.invoke('spotify:openDashboard'),
 
   getSettings: (): Promise<AppSettings> => ipcRenderer.invoke('settings:get'),
   updateSettings: (partial: Partial<AppSettings>): Promise<AppSettings> =>
@@ -74,6 +77,12 @@ const api = {
     const listener = () => cb();
     ipcRenderer.on('ui:escape', listener);
     return () => ipcRenderer.removeListener('ui:escape', listener);
+  },
+  /** Connection state, pushed when it changes rather than polled. */
+  onSpotifyStatus: (cb: (status: SpotifyStatus) => void) => {
+    const listener = (_e: Electron.IpcRendererEvent, status: SpotifyStatus) => cb(status);
+    ipcRenderer.on('spotify:status', listener);
+    return () => ipcRenderer.removeListener('spotify:status', listener);
   },
   onSettingsChanged: (cb: (settings: AppSettings) => void) => {
     const listener = (_e: Electron.IpcRendererEvent, s: AppSettings) => cb(s);

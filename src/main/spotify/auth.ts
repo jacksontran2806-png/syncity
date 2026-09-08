@@ -4,9 +4,14 @@
 // user-modify-playback-state (skip/back — Premium-only on
 // Spotify's side; free accounts get a 403 from these endpoints).
 //
-// CAUTION — not verified as production-ready: this app runs in Spotify's
-// "Development Mode" (25 allowlisted users) until a Quota Extension request is
-// approved. Do not distribute beyond yourself/testers without that approval.
+// THE 25-USER CAP: a Spotify application that hasn't passed quota review runs
+// in Development Mode, which admits only the 25 users listed on its dashboard.
+// Everyone else gets "user not registered" at the authorize step. That is not
+// something this app can lift, so a distributed build treats it as a normal
+// state and hands the user the way out: register an application of their own
+// (free, no review) and paste its client ID into Settings — see
+// renderer/components/SpotifySetup.tsx. The clientId below is whatever that
+// resolution produced; this file only performs the flow.
 
 import http from 'node:http';
 import crypto from 'node:crypto';

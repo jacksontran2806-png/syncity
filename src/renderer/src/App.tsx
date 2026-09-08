@@ -54,6 +54,7 @@ export function App(): JSX.Element {
     // The fullscreen hotkey changes settings in the main process, so the
     // renderer has to be told rather than finding out on the next poll.
     const offSettings = window.syncity.onSettingsChanged((s) => useStore.setState({ settings: s }));
+    const offSpotify = window.syncity.onSpotifyStatus(useStore.getState().setSpotifyStatus);
 
     refreshSpotifyStatus();
     window.syncity.getSettings().then((s) => useStore.setState({ settings: s }));
@@ -65,6 +66,7 @@ export function App(): JSX.Element {
       offOpenSettings();
       offExpand();
       offSettings();
+      offSpotify();
     };
   }, [setNowPlaying, setLyrics, setPalette, setPanel, setViewMode, refreshSpotifyStatus]);
 

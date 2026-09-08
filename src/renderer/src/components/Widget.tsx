@@ -27,6 +27,7 @@ export function Widget(): JSX.Element {
   const togglePanel = useStore((s) => s.togglePanel);
   const setViewMode = useStore((s) => s.setViewMode);
   const connectSpotify = useStore((s) => s.connectSpotify);
+  const setPanel = useStore((s) => s.setPanel);
   // Moves the playback anchor the instant it's clicked, so the lyric
   // highlight freezes/resumes on the click rather than on the next poll.
   const setPlaying = useStore((s) => s.setPlaying);
@@ -58,6 +59,10 @@ export function Widget(): JSX.Element {
   const trackLayers = useSlideTransition(nowPlaying, nowPlaying.trackId ?? 'none', 420);
 
   if (!spotifyStatus.authed) {
+    // With no client ID there is nothing to connect TO, and the button used to
+    // say so by naming an environment variable — a dead end for anyone who
+    // isn't a developer. It now opens the setup steps in Settings instead.
+    const needsSetup = !spotifyStatus.clientIdConfigured;
     return (
       <div className={`widget widget-anim-${expandAnim}-expand`} data-hitregion>
         <div className="widget-connect">
@@ -67,16 +72,16 @@ export function Widget(): JSX.Element {
             className="connect-btn"
             disabled={connecting}
             onClick={async () => {
+              if (needsSetup) {
+                setPanel('settings');
+                return;
+              }
               setConnecting(true);
               await guarded(connectSpotify);
               setConnecting(false);
             }}
           >
-            {connecting
-              ? 'Opening browser…'
-              : spotifyStatus.clientIdConfigured
-                ? 'Connect Spotify'
-                : 'Missing SPOTIFY_CLIENT_ID'}
+            {connecting ? 'Opening browser…' : needsSetup ? 'Set up Spotify' : 'Connect Spotify'}
           </button>
         </div>
       </div>

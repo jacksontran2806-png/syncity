@@ -31,22 +31,25 @@ Premium; showing what is playing does not.
 
 ## Using your own Spotify app
 
-The build carries a Spotify client ID so it works out of the box. Spotify caps
-an unpublished app at 25 authorised listeners, so if you hit that — or you
-simply want your own — point Syncity at your own app without rebuilding it:
+The build carries a Spotify client ID so it works out of the box — but Spotify
+only admits 25 people to an application that hasn't passed its quota review. If
+**Connect Spotify** fails with *"user not registered"*, that cap is why, and
+the fix is your own Spotify app: free, no review, about three minutes.
 
-1. Create an app at <https://developer.spotify.com/dashboard>.
-2. Add `http://127.0.0.1:8888/callback` to its **Redirect URIs**.
-3. Create a file at `%APPDATA%\Syncity\.env`:
+Settings → **Connection** → **Use my own Spotify app** walks you through it:
 
-   ```
-   SPOTIFY_CLIENT_ID=your_client_id_here
-   ```
+1. Open the Spotify dashboard and press **Create app**.
+2. Name it anything, tick **Web API**.
+3. Paste `http://127.0.0.1:8888/callback` into **Redirect URIs** — copy it from
+   the setup panel rather than typing it; this is the step people get wrong.
+4. Save, open the app's Settings, copy the **Client ID**.
+5. Paste it into Syncity and press Save, then **Connect Spotify**.
 
-4. Restart Syncity.
+A client ID is a public identifier, not a password. Syncity signs in with Auth
+Code + PKCE, which has no client secret at all.
 
-That file wins over whatever was baked into the build. There is no client
-secret to add — the desktop flow is Auth Code + PKCE, which does not use one.
+Changing the client ID signs you out, because the stored session belongs to the
+application that issued it.
 
 ## Building it yourself
 

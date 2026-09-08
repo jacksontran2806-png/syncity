@@ -1,5 +1,13 @@
 import { create } from 'zustand';
-import { DEFAULT_SETTINGS, type AppSettings, type DisplayInfo, type AlbumPalette, type LyricLine, type NowPlaying } from '@shared/types';
+import {
+  DEFAULT_SETTINGS,
+  type AppSettings,
+  type DisplayInfo,
+  type AlbumPalette,
+  type LyricLine,
+  type NowPlaying,
+  type SpotifyStatus,
+} from '@shared/types';
 import { anchorFromLocalEvent, anchorFromPoll, ZERO_ANCHOR, type PlaybackAnchor } from './lib/playbackClock';
 
 export type PanelId = 'none' | 'settings';
@@ -19,7 +27,7 @@ interface SyncityState {
   panel: PanelId;
   viewMode: ViewMode;
   audioBars: Float32Array; // smoothed 0..1 magnitude per band, see audio.ts
-  spotifyStatus: { authed: boolean; clientIdConfigured: boolean };
+  spotifyStatus: SpotifyStatus;
   monitors: DisplayInfo[];
 
   setNowPlaying: (np: NowPlaying) => void;
@@ -37,6 +45,8 @@ interface SyncityState {
   updateSettings: (partial: Partial<AppSettings>) => Promise<void>;
   refreshSpotifyStatus: () => Promise<void>;
   connectSpotify: () => Promise<void>;
+  disconnectSpotify: () => Promise<void>;
+  setSpotifyStatus: (status: SpotifyStatus) => void;
   loadMonitors: () => Promise<void>;
 }
 
@@ -55,7 +65,7 @@ export const useStore = create<SyncityState>((set, get) => ({
   panel: 'none',
   viewMode: 'island',
   audioBars: new Float32Array(0),
-  spotifyStatus: { authed: false, clientIdConfigured: true },
+  spotifyStatus: { authed: false, clientIdConfigured: true, clientId: '', redirectUri: '' },
   monitors: [],
 
   // Every poll re-anchors the clock. Nothing else in the app reads
@@ -90,6 +100,12 @@ export const useStore = create<SyncityState>((set, get) => ({
     await window.syncity.spotifyConnect();
     await get().refreshSpotifyStatus();
   },
+
+  disconnectSpotify: async () => {
+    set({ spotifyStatus: await window.syncity.spotifyDisconnect() });
+  },
+
+  setSpotifyStatus: (spotifyStatus) => set({ spotifyStatus }),
 
   loadMonitors: async () => {
     const monitors = await window.syncity.listMonitors();
