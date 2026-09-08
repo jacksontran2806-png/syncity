@@ -74,7 +74,12 @@ export function loadSettings(): AppSettings {
     }
     return { ...DEFAULT_SETTINGS, ...raw };
   } catch {
-    return { ...DEFAULT_SETTINGS };
+    // No settings file, or an unreadable one: treat this as a first run and
+    // record the running version as already seen, so a brand new install does
+    // not open with a card explaining what changed in the only build it has
+    // ever had. Every LATER update leaves the old version in this field, which
+    // is what makes the card appear exactly once per upgrade.
+    return { ...DEFAULT_SETTINGS, lastSeenReleaseVersion: app.getVersion() };
   }
 }
 

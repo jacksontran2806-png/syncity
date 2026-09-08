@@ -67,6 +67,12 @@ export function UpdateRow(): JSX.Element {
         <span className="settings-hint">{status?.currentVersion ?? '—'}</span>
         {line() && <span className={`update-line ${state === 'error' ? 'is-error' : ''}`}>{line()}</span>}
       </Row>
+      {/* The post-update card is dismissed for good once it is dismissed, so
+          this is the way back to the notes — and the way to read them at all
+          for anyone who closed it without looking. */}
+      <Row label="What's new">
+        <TextButton onClick={() => void window.syncity.openReleaseNotes()}>Open</TextButton>
+      </Row>
     </>
   );
 }

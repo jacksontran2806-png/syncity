@@ -224,6 +224,12 @@ export interface AppSettings {
   launchOnStartup: boolean;
   autoUpdateCheckEnabled: boolean;
   safeAreaOffsetPx: number;
+  /** The version whose release notes the user has already seen and dismissed.
+   *  The what's-new card shows exactly when this disagrees with the running
+   *  version (see WhatsNew.tsx). A FRESH install writes the current version
+   *  here rather than leaving it empty — someone who just downloaded the app
+   *  does not need to be told what changed in the build they chose. */
+  lastSeenReleaseVersion: string;
 }
 
 /** Windowed-mode box. Explicit width/height, so the window opens as a bounded
@@ -268,4 +274,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
   launchOnStartup: false,
   autoUpdateCheckEnabled: true,
   safeAreaOffsetPx: 4,
+  lastSeenReleaseVersion: '',
 };

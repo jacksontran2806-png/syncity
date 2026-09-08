@@ -6,6 +6,7 @@
 
 import { app, ipcMain, screen, shell } from 'electron';
 import type { AppSettings } from '../shared/types';
+import { RELEASE_NOTES_URL } from '../shared/releaseNotes';
 import type { NowPlayingProvider } from './providers/types';
 import type { NowPlayingLoop } from './nowPlayingLoop';
 import type { Updater } from './updater';
@@ -79,6 +80,11 @@ export function registerIpc(ctx: IpcContext): void {
   // click-through always-on-top overlay is not something to make the user
   // hunt for, and shell.openExternal is the only way out of it.
   ipcMain.handle('spotify:openDashboard', () => shell.openExternal('https://developer.spotify.com/dashboard'));
+
+  // A fixed URL, not one passed in from the renderer. shell.openExternal hands
+  // whatever it is given to the OS, so the renderer never gets to choose the
+  // destination — same reason the dashboard link above is written out here.
+  ipcMain.handle('app:openReleaseNotes', () => shell.openExternal(RELEASE_NOTES_URL));
 
   // --- settings ---
   ipcMain.handle('settings:get', () => getSettings());

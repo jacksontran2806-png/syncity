@@ -50,6 +50,10 @@ const api = {
     devicePixelRatio: number;
   }): Promise<void> => ipcRenderer.invoke('window:reportMetrics', metrics),
 
+  /** Opens the site's What's new section in the user's browser. Takes no URL
+   *  — main owns the destination. */
+  openReleaseNotes: (): Promise<void> => ipcRenderer.invoke('app:openReleaseNotes'),
+
   updateStatus: (): Promise<UpdateStatus> => ipcRenderer.invoke('update:status'),
   /** Checks now because the user asked. Runs regardless of the background
    *  check setting. */

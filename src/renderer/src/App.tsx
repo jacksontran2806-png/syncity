@@ -8,6 +8,7 @@ import { WidgetDock } from './components/WidgetDock';
 import { SettingsWindow } from './components/SettingsWindow';
 import { AlbumFullscreen } from './components/AlbumFullscreen';
 import { LyricsFullscreen } from './components/lyrics/LyricsFullscreen';
+import { WhatsNew } from './components/WhatsNew';
 
 export function App(): JSX.Element {
   useClickThrough();
@@ -164,6 +165,10 @@ export function App(): JSX.Element {
       {viewMode === 'island' && panel === 'settings' && <SettingsWindow />}
       {viewMode === 'album' && <AlbumFullscreen />}
       {viewMode === 'lyrics' && <LyricsFullscreen />}
+      {/* Not gated on view mode: an update that landed while someone was in
+          Lyrics mode is still worth one sentence. It renders nothing at all
+          unless this build's notes are unseen — see WhatsNew.tsx. */}
+      <WhatsNew />
     </div>
   );
 }

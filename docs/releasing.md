@@ -22,6 +22,13 @@ permanent link.
 
 1. Bump `version` in `package.json`. The updater compares against this; a
    release whose version is not higher than what is installed is ignored.
+1. Update `src/shared/releaseNotes.ts` in the same commit — the version there
+   must match `package.json`, and the three points are what the app itself
+   shows once, after updating (see `WhatsNew.tsx`). They disagree, the card
+   stays hidden rather than describing the wrong build; `npm test` fails if
+   the versions drift, so this cannot be forgotten silently.
+1. Add the release to the site's **What's new** section (`site/index.html`),
+   which is where the card's link lands.
 2. `npm test && npm run dist`
 3. Tag and push:
    ```bash

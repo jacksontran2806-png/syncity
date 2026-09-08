@@ -1,0 +1,142 @@
+/* The post-update card. Same chrome vocabulary as the widget and the settings
+   window — fill, blur, border and shadow all derived from --panel-opacity — so
+   it reads as part of the app rather than as a system notification that
+   happens to be on top of it.
+
+   Bottom-right on purpose: the widget owns the top edge in every overlay mode,
+   and the notch mode literally sits centred there. */
+
+.whats-new {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  width: 300px;
+  /* Above fullscreen content (10), below the widget and settings boxes (20) —
+     it is an announcement, not a thing to interact with first. */
+  z-index: 15;
+  pointer-events: auto;
+  padding: 14px 16px 12px;
+  border-radius: 18px;
+  background: rgba(var(--chrome-tint, 15, 15, 15), var(--panel-opacity, 0.55));
+  backdrop-filter: blur(calc(24px * var(--panel-opacity, 0.55) / 0.55)) saturate(1.4);
+  -webkit-backdrop-filter: blur(calc(24px * var(--panel-opacity, 0.55) / 0.55)) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, calc(0.08 * var(--panel-opacity, 0.55) / 0.55));
+  box-shadow:
+    0 14px 40px rgba(0, 0, 0, calc(0.35 * var(--panel-opacity, 0.55) / 0.55)),
+    inset 0 1px 0 rgba(255, 255, 255, calc(0.06 * var(--panel-opacity, 0.55) / 0.55));
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, calc(0.55 - var(--panel-opacity, 0.55)));
+  animation: whats-new-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Dismissal animates out, then the component unmounts on the settings write
+   that comes back over IPC. If that write is slow the card is already gone
+   visually, which is the behaviour someone pressing ✕ expects. */
+.whats-new.is-leaving {
+  animation: whats-new-out 200ms ease forwards;
+  pointer-events: none;
+}
+
+@keyframes whats-new-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes whats-new-out {
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .whats-new,
+  .whats-new.is-leaving {
+    animation-duration: 1ms;
+  }
+}
+
+.whats-new-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* The album's own colour, so the card belongs to whatever is playing — the
+   same move the pill's spectrum and the lyric highlight make. --wn-accent is
+   set on the card from palette.primary; the chrome tint is deliberately NOT
+   used here, since chrome is neutral by default and the badge would vanish. */
+.whats-new-badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(var(--wn-accent, 124, 92, 255), 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.whats-new-version {
+  font-family: var(--font-display, inherit);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.whats-new-close {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 12px;
+  line-height: 1;
+  padding: 4px;
+  border-radius: 8px;
+}
+.whats-new-close:hover {
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.whats-new-headline {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.whats-new-points {
+  margin: 8px 0 0;
+  padding-left: 16px;
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.whats-new-actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.whats-new-link {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 11px;
+  border-radius: 10px;
+}
+.whats-new-link:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
