@@ -1,0 +1,537 @@
+/* Syncity — download site.
+   ------------------------------------------------------------------
+   The page has no fixed accent colour. Surfaces and text are derived from
+   whichever album palette is currently up, the same way the app derives lyric
+   colour from cover art (see src/renderer/src/lib/lyricColor.ts). app.js moves
+   these five variables and everything else follows; nothing hardcodes a hue.
+
+   Typefaces are the app's own, self-hosted from the same woff2 files it ships,
+   so the site and the product are visibly one thing. */
+
+@font-face {
+  font-family: 'Clash Display';
+  src: url('/fonts/ClashDisplay-700.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Clash Display';
+  src: url('/fonts/ClashDisplay-600.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'General Sans';
+  src: url('/fonts/GeneralSans-400.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'General Sans';
+  src: url('/fonts/GeneralSans-500.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+
+:root {
+  /* Moved by app.js as the album changes. The defaults are the first palette,
+     so the page is correct before a single line of script runs. */
+  --ground: #0e0a16;
+  --raised: #171126;
+  --lyric: #d8c2ff;
+  --cover: #7c5cff;
+
+  --text: #ece8f4;
+  --muted: #9d95ae;
+  --line: rgba(255, 255, 255, 0.09);
+
+  --measure: 62ch;
+  --gutter: clamp(20px, 5vw, 64px);
+  --sans: 'General Sans', -apple-system, 'Segoe UI', system-ui, sans-serif;
+  --display: 'Clash Display', 'General Sans', -apple-system, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  /* The one place the album change is felt page-wide. Matches the app's own
+     600ms colour transition. */
+  transition: background-color 900ms ease;
+}
+
+a {
+  color: inherit;
+}
+
+code {
+  font-family: 'Cascadia Mono', Consolas, ui-monospace, monospace;
+  font-size: 0.88em;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.07);
+  white-space: nowrap;
+}
+
+.skip {
+  position: absolute;
+  left: -9999px;
+}
+.skip:focus {
+  left: var(--gutter);
+  top: 12px;
+  z-index: 10;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: var(--raised);
+}
+
+:where(a, button):focus-visible {
+  outline: 2px solid var(--lyric);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ---------- Nav ---------- */
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 22px var(--gutter);
+  flex-wrap: wrap;
+}
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 19px;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+}
+/* The app's icon, rebuilt in three divs: three lyric lines with the middle one
+   lit. Same mark, no image request. */
+.wordmark-mark {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 22px;
+}
+.wordmark-mark i {
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.32);
+}
+.wordmark-mark i:first-child {
+  width: 60%;
+}
+.wordmark-mark i:nth-child(2) {
+  width: 100%;
+  height: 4px;
+  background: var(--lyric);
+  transition: background-color 900ms ease;
+}
+.wordmark-mark i:last-child {
+  width: 74%;
+}
+.nav nav {
+  display: flex;
+  gap: 26px;
+  font-size: 14.5px;
+  color: var(--muted);
+}
+.nav nav a {
+  text-decoration: none;
+  padding-bottom: 2px;
+  border-bottom: 1px solid transparent;
+}
+.nav nav a:hover {
+  color: var(--text);
+  border-bottom-color: var(--line);
+}
+
+/* ---------- Hero ---------- */
+
+.hero {
+  padding: clamp(48px, 9vw, 104px) var(--gutter) clamp(56px, 8vw, 96px);
+  text-align: center;
+  /* A wash of the current cover colour, so the album change is felt behind the
+     type rather than only in it. */
+  background: radial-gradient(120% 70% at 50% 0%, color-mix(in oklab, var(--cover) 22%, transparent), transparent 70%);
+  transition: background 900ms ease;
+}
+
+.album-run {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: clamp(32px, 6vw, 56px);
+}
+.album {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--album, #333);
+  cursor: pointer;
+  opacity: 0.42;
+  transition: opacity 300ms ease, transform 300ms ease;
+}
+.album:hover {
+  opacity: 0.8;
+}
+.album.is-playing {
+  opacity: 1;
+  transform: scale(1.16);
+}
+
+/* The lyric stage, proportioned like the app's: the active line dominant, its
+   neighbours present but receded. */
+.stage {
+  /* Sized in page units, NOT in ch: a ch here resolves against the inherited
+     16px body size, not the 90px display size, which collapsed the headline to
+     one word per line. */
+  max-width: min(900px, 92vw);
+  margin: 0 auto;
+}
+.line {
+  margin: 0;
+  font-family: var(--display);
+  letter-spacing: -0.03em;
+  /* Tight tracking closes the word gaps too, so they get it back. */
+  word-spacing: 0.1em;
+  line-height: 1.05;
+  transition: color 900ms ease;
+}
+.line--active {
+  font-size: clamp(38px, 7vw, 88px);
+  font-weight: 700;
+  line-height: 1.02;
+  color: var(--lyric);
+  /* Enough to lift the type off the wash, not enough to read as a glow. */
+  text-shadow: 0 2px 44px color-mix(in oklab, var(--cover) 28%, transparent);
+  padding: 0.1em 0;
+}
+/* The receded neighbours are set in the body face at normal tracking: the
+   display face's tight letter-spacing is built for large sizes and closes up
+   into a single word at 18px. */
+.line--past,
+.line--next {
+  font-family: var(--sans);
+  font-size: clamp(14px, 1.8vw, 18px);
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.26);
+}
+
+.lede {
+  max-width: 54ch;
+  margin: clamp(28px, 4vw, 40px) auto 0;
+  color: var(--muted);
+  font-size: clamp(16px, 1.6vw, 18.5px);
+}
+
+.get {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 32px;
+}
+.btn {
+  display: inline-block;
+  padding: 13px 26px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-weight: 500;
+  font-size: 15.5px;
+  text-decoration: none;
+  transition: transform 160ms ease, background-color 300ms ease, border-color 300ms ease;
+}
+.btn:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.24);
+}
+.btn--primary {
+  background: var(--lyric);
+  border-color: transparent;
+  /* Reads against whatever the current lyric colour is, since that is the
+     button's fill and it moves. */
+  color: #14101c;
+  font-weight: 600;
+  transition: transform 160ms ease, background-color 900ms ease;
+}
+.fineprint {
+  margin: 16px 0 0;
+  font-size: 13.5px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* ---------- Widget showcase ---------- */
+
+.showcase {
+  padding: clamp(40px, 7vw, 80px) var(--gutter);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 26px;
+  border-top: 1px solid var(--line);
+}
+/* The collapsed pill, at the size it actually is on screen (120×28 by
+   default), so the claim "it is small" is shown rather than asserted. */
+.pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(18, 18, 22, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(18px);
+}
+.pill-art {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: linear-gradient(135deg, var(--cover), color-mix(in oklab, var(--lyric) 70%, var(--cover)));
+  transition: background 900ms ease;
+  flex: none;
+}
+.pill-meta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+.pill-title {
+  font-size: 12.5px;
+  font-weight: 500;
+}
+.pill-artist {
+  font-size: 11px;
+  color: var(--muted);
+}
+.pill-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 18px;
+  margin-left: 4px;
+}
+.pill-bars i {
+  width: 2.5px;
+  border-radius: 999px;
+  background: var(--lyric);
+  height: calc(var(--h) * 100%);
+  transition: background-color 900ms ease;
+}
+.showcase-caption {
+  max-width: 46ch;
+  margin: 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+/* ---------- Sections ---------- */
+
+section h2 {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: clamp(26px, 3.4vw, 36px);
+  letter-spacing: -0.015em;
+  word-spacing: 0.08em;
+  margin: 0 0 clamp(24px, 3.5vw, 40px);
+}
+
+.what,
+.setup,
+.questions {
+  padding: clamp(48px, 7vw, 88px) var(--gutter);
+  border-top: 1px solid var(--line);
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+/* Hairline-separated rows rather than a grid of identical cards: these are
+   four claims of equal weight, not four products. */
+.features,
+.qa {
+  margin: 0;
+  display: grid;
+  gap: 0;
+}
+.features > div,
+.qa > div {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(0, 2.1fr);
+  gap: 8px 40px;
+  padding: 22px 0;
+  border-top: 1px solid var(--line);
+}
+.features > div:last-child,
+.qa > div:last-child {
+  border-bottom: 1px solid var(--line);
+}
+/* Body face, not the display one. Clash Display's tracking is drawn for
+   headline sizes; at 17px its words close up into each other and a two-word
+   heading reads as one. The display face earns its keep in the hero and the
+   section heads, and stops there. */
+.features dt,
+.qa dt {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 16.5px;
+  letter-spacing: -0.005em;
+  color: var(--text);
+}
+.features dd,
+.qa dd {
+  margin: 0;
+  max-width: var(--measure);
+  color: var(--muted);
+}
+
+/* ---------- Setup ---------- */
+
+.steps {
+  list-style: none;
+  counter-reset: step;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.steps li {
+  counter-increment: step;
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 4px 16px;
+  padding: 20px 0;
+  border-top: 1px solid var(--line);
+}
+/* Numbered because this genuinely is a sequence — you cannot connect Spotify
+   before the app is installed. */
+.steps li::before {
+  content: counter(step);
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--lyric);
+  transition: color 900ms ease;
+  grid-row: span 2;
+}
+.steps h3 {
+  margin: 0;
+  font-size: 16.5px;
+  font-weight: 600;
+  font-family: var(--sans);
+  letter-spacing: -0.005em;
+}
+.steps p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  max-width: var(--measure);
+}
+
+.aside {
+  margin-top: 40px;
+  padding: 26px 28px;
+  border-radius: 16px;
+  background: var(--raised);
+  border: 1px solid var(--line);
+  transition: background-color 900ms ease;
+}
+.aside h3 {
+  margin: 0 0 10px;
+  font-family: var(--sans);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+.aside p {
+  margin: 0;
+  color: var(--muted);
+  max-width: var(--measure);
+}
+.substeps {
+  margin: 14px 0 0;
+  padding-left: 20px;
+  color: var(--muted);
+  display: grid;
+  gap: 5px;
+  max-width: var(--measure);
+}
+.substeps a {
+  color: var(--lyric);
+  transition: color 900ms ease;
+}
+.aside-note {
+  margin-top: 16px !important;
+  font-size: 14px;
+  opacity: 0.72;
+}
+
+/* ---------- Footer ---------- */
+
+footer {
+  padding: 40px var(--gutter) 56px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+  color: var(--muted);
+  font-size: 14.5px;
+}
+footer p {
+  margin: 0 0 6px;
+}
+footer a {
+  color: var(--text);
+}
+.footer-quiet {
+  opacity: 0.55;
+  font-size: 13px;
+}
+
+/* ---------- Narrow ---------- */
+
+@media (max-width: 720px) {
+  .features > div,
+  .qa > div {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .nav nav {
+    gap: 18px;
+    font-size: 14px;
+  }
+  .stage {
+    max-width: 100%;
+  }
+}
+
+/* One motion idea on this page, and it is the album cycle. Someone who has
+   asked for less movement still gets the first palette, in full colour —
+   the colours are the point, the transition between them is not. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+  }
+}

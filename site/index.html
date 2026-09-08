@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Syncity — lyrics on top of everything</title>
+    <meta
+      name="description"
+      content="A Spotify lyrics overlay for Windows. Synced lines above your game, your work, your desktop, coloured from the album art."
+    />
+    <link rel="icon" href="/icon.png" />
+    <meta property="og:title" content="Syncity — lyrics on top of everything" />
+    <meta
+      property="og:description"
+      content="A Spotify lyrics overlay for Windows. Synced lines above whatever you're doing, coloured from the album art."
+    />
+    <meta property="og:image" content="/icon.png" />
+    <meta name="theme-color" content="#0b0910" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <a class="skip" href="#download">Skip to download</a>
+
+    <header class="nav">
+      <a class="wordmark" href="/">
+        <span class="wordmark-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        Syncity
+      </a>
+      <nav>
+        <a href="#what">What it does</a>
+        <a href="#setup">Setup</a>
+        <a href="#questions">Questions</a>
+        <a href="https://github.com/jacksontran2806-png/syncity">Source</a>
+      </nav>
+    </header>
+
+    <!-- The hero is the product doing its one distinctive thing: the headline
+         is rendered as the app's active lyric line and recolours itself from a
+         run of album palettes, exactly as the app derives lyric colour from
+         cover art. Nothing here describes the feature; it just runs. -->
+    <main>
+      <section class="hero">
+        <div class="album-run" aria-hidden="true">
+          <button class="album" data-palette="0" type="button" title="Deep purple cover"></button>
+          <button class="album" data-palette="1" type="button" title="Warm red cover"></button>
+          <button class="album" data-palette="2" type="button" title="Green cover"></button>
+          <button class="album" data-palette="3" type="button" title="Blue cover"></button>
+          <button class="album" data-palette="4" type="button" title="Amber cover"></button>
+        </div>
+
+        <div class="stage">
+          <p class="line line--past">every word where you can see it</p>
+          <h1 class="line line--active">Lyrics, on top of everything.</h1>
+          <p class="line line--next">and the colour comes from the cover</p>
+        </div>
+
+        <p class="lede">
+          Syncity floats synced Spotify lyrics above your game, your work, your desktop. It reads
+          the album art and colours itself to match, then gets out of the way.
+        </p>
+
+        <div class="get" id="download">
+          <a class="btn btn--primary" href="https://github.com/jacksontran2806-png/syncity/releases/latest/download/Syncity-Setup.exe">
+            Download for Windows
+          </a>
+          <a class="btn" href="https://github.com/jacksontran2806-png/syncity/releases/latest/download/Syncity-Portable.exe">
+            Portable version
+          </a>
+        </div>
+        <p class="fineprint">Windows 10 and 11. Free. Needs a Spotify account.</p>
+      </section>
+
+      <!-- A 1:1 rebuild of the widget, in the app's own CSS, rather than a
+           screenshot of a transparent window that would show whatever happened
+           to be behind it. -->
+      <section class="showcase" aria-labelledby="what">
+        <div class="pill">
+          <span class="pill-art" aria-hidden="true"></span>
+          <span class="pill-meta">
+            <span class="pill-title">Now playing</span>
+            <span class="pill-artist">hover to expand</span>
+          </span>
+          <span class="pill-bars" aria-hidden="true">
+            <i style="--h: 0.35"></i><i style="--h: 0.7"></i><i style="--h: 0.5"></i>
+            <i style="--h: 0.9"></i><i style="--h: 0.45"></i><i style="--h: 0.65"></i>
+            <i style="--h: 0.3"></i>
+          </span>
+        </div>
+        <p class="showcase-caption">
+          It sits as a small pill until you reach for it. Everywhere else, clicks pass straight
+          through to whatever is underneath.
+        </p>
+      </section>
+
+      <section class="what" id="what">
+        <h2>What it does</h2>
+        <dl class="features">
+          <div>
+            <dt>Lyrics that keep time</dt>
+            <dd>
+              Lines come from LRCLIB and run on a local clock, so the highlight moves smoothly
+              instead of jumping each time Spotify is asked where you are. Two keys nudge the
+              timing if your headphones lag.
+            </dd>
+          </div>
+          <div>
+            <dt>Colour taken from the cover</dt>
+            <dd>
+              The text colour is picked out of the album's own palette and checked for contrast
+              against what is actually behind it. A purple record gives pale lavender, a red one
+              warm cream. Never a clashing opposite.
+            </dd>
+          </div>
+          <div>
+            <dt>Out of the way by default</dt>
+            <dd>
+              No taskbar window and no focus stealing. It lives in the tray, stays above
+              fullscreen games, and can hide itself until you press a key.
+            </dd>
+          </div>
+          <div>
+            <dt>Yours to arrange</dt>
+            <dd>
+              Two fullscreen views, five type pairings, any monitor, and a widget you can drag
+              wherever it suits you.
+            </dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="setup" id="setup">
+        <h2>Setting it up</h2>
+        <ol class="steps">
+          <li>
+            <h3>Download and run it</h3>
+            <p>
+              Windows will show a blue “Windows protected your PC” panel, because the file is not
+              signed by a certificate authority. Choose <strong>More info</strong>, then
+              <strong>Run anyway</strong>. The installer needs no administrator rights.
+            </p>
+          </li>
+          <li>
+            <h3>Find it in the tray</h3>
+            <p>
+              Syncity has no taskbar window. Look for the three-bar icon beside the clock — right
+              click it for the overlay, settings and quit.
+            </p>
+          </li>
+          <li>
+            <h3>Connect Spotify</h3>
+            <p>
+              Open Settings and press <strong>Connect Spotify</strong>. Your browser opens once,
+              you approve it, and the tab closes itself.
+            </p>
+          </li>
+        </ol>
+
+        <div class="aside">
+          <h3>If Connect says “user not registered”</h3>
+          <p>
+            Spotify only admits 25 people to an app that has not been through its review, and the
+            copy bundled with Syncity fills up. Registering your own takes about three minutes and
+            costs nothing — Settings walks you through it, and it is the same five steps:
+          </p>
+          <ol class="substeps">
+            <li>Create an app at <a href="https://developer.spotify.com/dashboard">developer.spotify.com/dashboard</a>.</li>
+            <li>Name it anything. Tick <strong>Web API</strong>.</li>
+            <li>Add <code>http://127.0.0.1:8888/callback</code> to its redirect URIs.</li>
+            <li>Copy the Client ID from the app's settings.</li>
+            <li>Paste it into Syncity, save, and connect.</li>
+          </ol>
+          <p class="aside-note">
+            A Client ID is a public identifier, not a password. Syncity signs in with PKCE, which
+            has no secret to store.
+          </p>
+        </div>
+      </section>
+
+      <section class="questions" id="questions">
+        <h2>Questions</h2>
+        <dl class="qa">
+          <div>
+            <dt>Do I need Spotify Premium?</dt>
+            <dd>
+              Only to skip and pause from the widget. Seeing what is playing, with lyrics, works on
+              a free account.
+            </dd>
+          </div>
+          <div>
+            <dt>Why does Windows warn me about it?</dt>
+            <dd>
+              The builds are unsigned. A code-signing certificate is a yearly purchase, and this is
+              a free app. The source is on GitHub if you would rather build it yourself.
+            </dd>
+          </div>
+          <div>
+            <dt>Installer or portable?</dt>
+            <dd>
+              The installer adds a Start Menu entry and an uninstaller. The portable build is one
+              file that installs nothing. Both keep their settings in <code>%APPDATA%\Syncity</code>,
+              so signing in once is enough either way.
+            </dd>
+          </div>
+          <div>
+            <dt>A song has no lyrics.</dt>
+            <dd>
+              Lyrics come from LRCLIB, a community database. Not every track is in it, and the
+              overlay says so rather than sitting blank.
+            </dd>
+          </div>
+          <div>
+            <dt>Mac or Linux?</dt>
+            <dd>
+              Not yet. The build targets exist but nothing has been tested there, and the overlay
+              leans on Windows-specific window behaviour.
+            </dd>
+          </div>
+        </dl>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        Syncity is free and open source.
+        <a href="https://github.com/jacksontran2806-png/syncity">Read the code</a> or
+        <a href="https://github.com/jacksontran2806-png/syncity/issues">report something broken</a>.
+      </p>
+      <p class="footer-quiet">Not affiliated with Spotify. Lyrics provided by LRCLIB.</p>
+    </footer>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
