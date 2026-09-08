@@ -27,12 +27,11 @@ export interface ReleaseNotes {
 }
 
 export const RELEASE_NOTES: ReleaseNotes = {
-  version: '0.1.1',
-  headline: 'Smaller and lighter. Nothing moved.',
+  version: '0.1.2',
+  headline: 'Syncity now says when it has updated.',
   points: [
-    '45 MB smaller once installed, and a smaller download.',
-    'Less battery when idle — the pill and the lyric clock stop when nothing is moving.',
-    'System audio is only captured while the visualizer is actually on screen.',
+    'This card. It appears once after an update, then never again.',
+    'Settings keeps a link to the full notes, for anyone who closed it too fast.',
   ],
 };
 
