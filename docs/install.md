@@ -51,6 +51,19 @@ Code + PKCE, which has no client secret at all.
 Changing the client ID signs you out, because the stored session belongs to the
 application that issued it.
 
+## Updates
+
+The installed build checks for new versions in the background and downloads
+them quietly. It never restarts itself to apply one — Settings shows
+**Restart to update** when a version is waiting, and if you'd rather it stayed
+out of the way entirely, the update is applied the next time you quit anyway.
+Background checks can be turned off under Settings → **Check for updates**;
+**Check now** still works when they are.
+
+The portable build cannot update itself — there is no installer to apply the
+update with — so it tells you a new version exists and leaves replacing the
+file to you.
+
 ## Building it yourself
 
 ```bash

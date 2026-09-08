@@ -8,6 +8,7 @@ import { app, ipcMain, screen, shell } from 'electron';
 import type { AppSettings } from '../shared/types';
 import type { NowPlayingProvider } from './providers/types';
 import type { NowPlayingLoop } from './nowPlayingLoop';
+import type { Updater } from './updater';
 import { clearTokens } from './spotify/tokens';
 import {
   moveOverlayToDisplay,
@@ -31,6 +32,7 @@ export interface IpcContext {
   redirectUri: string;
   /** Pushes connection state to the renderer after something changes it. */
   sendSpotifyStatus: () => void;
+  updater: Updater;
   /** Binds/releases the global Escape accelerator as fullscreen views open
    *  and close — see hotkeys.ts setEscapeCapture for why it's scoped. */
   setFullscreenView: (active: boolean) => void;
@@ -131,6 +133,14 @@ export function registerIpc(ctx: IpcContext): void {
   // force: a Resync that lands while a routine poll is in flight must not be
   // answered with that poll's position — it was read before the user asked.
   ipcMain.handle('playback:sync', () => loop.tick({ force: true }));
+
+  // --- updates ---
+  ipcMain.handle('update:status', () => ctx.updater.status());
+  ipcMain.handle('update:check', () => ctx.updater.checkNow());
+  // Restarts into the new version. Deliberately a separate call from the
+  // download: the app is on screen over whatever the user is doing, so the
+  // moment it disappears and comes back is theirs to pick.
+  ipcMain.handle('update:install', () => ctx.updater.installNow());
 
   // --- app ---
   ipcMain.handle('app:quit', () => app.quit());

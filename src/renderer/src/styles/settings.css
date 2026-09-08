@@ -307,3 +307,17 @@
 .spotify-input::placeholder {
   color: rgba(255, 255, 255, 0.3);
 }
+
+/* The update state's own sentence, next to the running version. Wraps rather
+   than truncating: the only long ones are the messages that matter most —
+   why an update can't be applied, or why a check failed. */
+.update-line {
+  font-size: 11px;
+  opacity: 0.72;
+  text-align: right;
+  max-width: 190px;
+  line-height: 1.35;
+}
+.update-line.is-error {
+  opacity: 0.6;
+}

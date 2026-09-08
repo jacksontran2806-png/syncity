@@ -3,6 +3,7 @@ import { useStore } from '../store';
 import { Choice, Row, Section, Slider, TextButton, Toggle } from './SettingsControls';
 import { ColorWheelPicker } from './ColorWheelPicker';
 import { SpotifySetup } from './SpotifySetup';
+import { UpdateRow } from './UpdateRow';
 import { FONT_THEMES } from '../lib/fontThemes';
 import type { FontTheme } from '@shared/types';
 
@@ -22,7 +23,6 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }): JSX.Elemen
   const updateSettings = useStore((s) => s.updateSettings);
   const monitors = useStore((s) => s.monitors);
   const loadMonitors = useStore((s) => s.loadMonitors);
-  const [updateFlash, setUpdateFlash] = useState('');
 
   useEffect(() => void loadMonitors(), [loadMonitors]);
 
@@ -249,10 +249,7 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }): JSX.Elemen
             ]}
           />
           <Toggle label="Launch on startup" k="launchOnStartup" />
-          <Toggle label="Check for updates" k="autoUpdateCheckEnabled">
-            <TextButton onClick={() => setUpdateFlash('Auto-update isn’t wired up yet')}>Check now</TextButton>
-          </Toggle>
-          {updateFlash && <div className="settings-flash">{updateFlash}</div>}
+          <UpdateRow />
         </Section>
 
         <button type="button" className="quit-btn" onClick={() => window.syncity.quit()}>

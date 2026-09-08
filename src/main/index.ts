@@ -40,6 +40,7 @@ import { registerIpc } from './ipc';
 import { registerHotkeys, setEscapeCapture, unregisterHotkeys } from './hotkeys';
 import { applyWindowMode, createOverlayWindow, getOverlayWindow, watchDisplayChanges, moveOverlayToDisplay } from './windows';
 import { createTray } from './tray';
+import { createUpdater } from './updater';
 import { registerCrashDiagnostics } from './crashDiagnostics';
 import { migrateLegacyUserData } from './legacyUserData';
 
@@ -129,6 +130,11 @@ const loop = createNowPlayingLoop({
   provider,
   colorOverrideEnabled: () => settings.colorOverrideEnabled,
   send,
+});
+
+const updater = createUpdater({
+  autoCheckEnabled: () => settings.autoUpdateCheckEnabled,
+  send: (status) => send('update:status', status),
 });
 
 /**
@@ -239,9 +245,11 @@ app.whenReady().then(() => {
     redirectUri: REDIRECT_URI,
     sendSpotifyStatus,
     setFullscreenView: (active) => setEscapeCapture(active, () => send('ui:escape')),
+    updater,
   });
   registerHotkeys({ getSettings: () => settings, patchSettings, send });
   loop.start();
+  updater.start();
 
   watchDisplayChanges(() => moveOverlayToDisplay(settings.displayId, settings.windowMode));
 
@@ -250,7 +258,10 @@ app.whenReady().then(() => {
   app.setLoginItemSettings({ openAtLogin: settings.launchOnStartup });
 });
 
-app.on('will-quit', unregisterHotkeys);
+app.on('will-quit', () => {
+  unregisterHotkeys();
+  updater.stop();
+});
 
 // No dock/taskbar presence and a tray icon — closing the window must not quit
 // the app; only the tray's Quit action (or app:quit from settings) should.

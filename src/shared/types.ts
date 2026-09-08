@@ -106,6 +106,24 @@ export interface WidgetPosition {
   yPct: number;
 }
 
+/**
+ * Where an in-place update has got to.
+ *
+ * One shape for every state, so the settings panel renders a single value
+ * rather than combining a set of flags. 'unsupported' is a real, expected
+ * state, not a failure: the portable build has no installer to apply an
+ * update with, and a build running from source must never update itself.
+ */
+export interface UpdateStatus {
+  state: 'idle' | 'checking' | 'available' | 'downloading' | 'ready' | 'none' | 'unsupported' | 'error';
+  version?: string;
+  /** 0-100 while downloading. */
+  percent?: number;
+  /** Human-readable, for 'error' and 'unsupported'. */
+  message?: string;
+  currentVersion: string;
+}
+
 /** What the renderer knows about the Spotify connection. */
 export interface SpotifyStatus {
   authed: boolean;

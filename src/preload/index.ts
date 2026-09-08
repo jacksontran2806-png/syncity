@@ -1,5 +1,13 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { AppSettings, DisplayInfo, AlbumPalette, LyricLine, NowPlaying, SpotifyStatus } from '../shared/types';
+import type {
+  AppSettings,
+  DisplayInfo,
+  AlbumPalette,
+  LyricLine,
+  NowPlaying,
+  SpotifyStatus,
+  UpdateStatus,
+} from '../shared/types';
 
 const api = {
   spotifyStatus: (): Promise<SpotifyStatus> => ipcRenderer.invoke('spotify:status'),
@@ -42,6 +50,13 @@ const api = {
     devicePixelRatio: number;
   }): Promise<void> => ipcRenderer.invoke('window:reportMetrics', metrics),
 
+  updateStatus: (): Promise<UpdateStatus> => ipcRenderer.invoke('update:status'),
+  /** Checks now because the user asked. Runs regardless of the background
+   *  check setting. */
+  updateCheck: (): Promise<void> => ipcRenderer.invoke('update:check'),
+  /** Restarts into a downloaded update. */
+  updateInstall: (): Promise<void> => ipcRenderer.invoke('update:install'),
+
   quit: (): Promise<void> => ipcRenderer.invoke('app:quit'),
 
   setIgnoreMouseEvents: (ignore: boolean): void => {
@@ -77,6 +92,11 @@ const api = {
     const listener = () => cb();
     ipcRenderer.on('ui:escape', listener);
     return () => ipcRenderer.removeListener('ui:escape', listener);
+  },
+  onUpdateStatus: (cb: (status: UpdateStatus) => void) => {
+    const listener = (_e: Electron.IpcRendererEvent, status: UpdateStatus) => cb(status);
+    ipcRenderer.on('update:status', listener);
+    return () => ipcRenderer.removeListener('update:status', listener);
   },
   /** Connection state, pushed when it changes rather than polled. */
   onSpotifyStatus: (cb: (status: SpotifyStatus) => void) => {

@@ -30,10 +30,24 @@ extraResources:
   - from: resources/tray-icon.png
     to: tray-icon.png
 
+# Where the app looks for updates, and where `npm run dist -- --publish always`
+# would upload them. The releases are public, so a running app reads this feed
+# without a token; publishing needs GH_TOKEN in the environment.
+publish:
+  provider: github
+  owner: jacksontran2806-png
+  repo: syncity
+
 win:
   # electron-builder derives the multi-resolution .ico from this PNG, so there
   # is one icon to keep up to date rather than a generated binary in the repo.
   icon: resources/app-icon.png
+  # These builds are unsigned, and electron-updater refuses an update whose
+  # signature it cannot match against the installed app's. With nothing to
+  # match, that check can only fail — it is turned off here rather than left to
+  # break every update with an error about a publisher name. Turn it back on
+  # the day these builds get a certificate.
+  verifyUpdateCodeSignature: false
   target:
     - target: nsis
       arch: [x64]

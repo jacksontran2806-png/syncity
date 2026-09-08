@@ -41,6 +41,10 @@ npm run dev
 The download site is `site/` — plain HTML, no build step, deployed to Vercel
 with `vercel deploy --prod` from that directory.
 
+Installed copies update themselves from GitHub releases, which makes a release
+the feed the app reads rather than just a place to put files —
+[docs/releasing.md](docs/releasing.md) covers what one has to contain.
+
 Playback control requires Spotify Premium. Reading what is playing does not.
 Apple Music support is stubbed but not functional — see
 [docs/apple-music-setup.md](docs/apple-music-setup.md).
