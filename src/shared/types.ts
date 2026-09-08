@@ -33,16 +33,16 @@ export interface NowPlaying {
   error?: string;
 }
 
-// Lyrics view backdrop.
-// transparent = desktop shows through
-// albumBlend  = darkened/desaturated tint of the album's dominant color(s) —
-//               see AppSettings.albumBlendColorCount for how many of the
-//               palette's colors blend into it
-// custom      = a flat color the user picks (AppSettings.lyricsCustomColor) —
-//               replaces the old fixed black/white "solid" mode entirely,
-//               since any color (including plain black or white) is just one
-//               pick away in the color wheel now
-export type LyricsBackground = 'transparent' | 'albumBlend' | 'custom';
+// Lyrics view backdrop. What sits behind the words, and whether anything does.
+//
+// albumCover = the cover, blurred and filled edge to edge, over an opaque
+//              base. The desktop does NOT show through: this is the "watch the
+//              lyrics" mode.
+// clear      = nothing at all. Just the words over whatever is already on
+//              screen — a game, a document, the desktop.
+// albumBlend = a gradient mixed from the album's palette.
+// custom     = one flat colour of the user's choosing.
+export type LyricsBackground = 'albumCover' | 'clear' | 'albumBlend' | 'custom';
 
 // Per-word/per-line animation treatment. The first four share the same
 // timestamp data, ActiveLine, and sizing/contrast rules — only the motion
@@ -162,6 +162,12 @@ export interface AppSettings {
    *  the backdrop actually reads as "from the album" instead of near-black. */
   albumBlendColorCount: 1 | 2 | 3;
   lyricStyle: LyricStyle;
+  /** Multiplies every lyric size in every view — the active line, the stacked
+   *  context rows, the next-line preview and the Giant Word's measured fit.
+   *  One control rather than a size per style: the styles already differ in
+   *  scale by design, and "make it bigger" is a property of the screen and the
+   *  distance the user is sitting at, not of the style they picked. */
+  lyricsScale: number;
   /** Manual lyric sync trim, ms. Subtracted from playback position before
    *  picking the active line/word: POSITIVE holds the lyrics back (use when the
    *  highlight runs ahead of the vocal), negative pushes them earlier.
@@ -227,10 +233,11 @@ export interface LyricLine {
 
 export const DEFAULT_SETTINGS: AppSettings = {
   spotifyClientId: '',
-  lyricsBackground: 'transparent',
+  lyricsBackground: 'albumCover',
   lyricsCustomColor: { r: 18, g: 18, b: 26 },
   albumBlendColorCount: 2,
   lyricStyle: 'karaokeFill',
+  lyricsScale: 1,
   lyricsOffsetMs: 0,
   albumFullBleed: true,
   albumCustomBgEnabled: false,

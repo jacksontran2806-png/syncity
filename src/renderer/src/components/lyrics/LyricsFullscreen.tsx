@@ -12,6 +12,11 @@ import { InstrumentalDots } from './InstrumentalDots';
 import { NoLyricsIndicator } from './NoLyricsIndicator';
 import type { RGB } from '@shared/types';
 
+/** Stand-in for "we cannot know what is behind this". Mid grey on purpose:
+ *  it has no strong pull in either direction, so the colour that wins is one
+ *  that works against a light background and a dark one alike. */
+const UNKNOWABLE_BG: RGB = { r: 128, g: 128, b: 132 };
+
 export function LyricsFullscreen(): JSX.Element {
   const lyrics = useStore((s) => s.lyrics);
   const nowPlaying = useStore((s) => s.nowPlaying);
@@ -27,7 +32,14 @@ export function LyricsFullscreen(): JSX.Element {
   const bgRgb: RGB = useMemo(() => {
     if (settings.lyricsBackground === 'custom') return settings.lyricsCustomColor;
     if (settings.lyricsBackground === 'albumBlend') return moodyTintRgb(palette.primary);
-    // Transparent: what's behind the text is the blurred cover under a scrim.
+    // Clear mode has no background of ours to measure — the text sits over a
+    // game, a document, a white page, anything. UNKNOWABLE_BG is the honest
+    // stand-in: a mid grey, which forces the scorer toward a colour with
+    // headroom in both directions rather than one tuned to a darkness we are
+    // only guessing at. The shadow lyricColor adds for this mode is what
+    // actually carries it.
+    if (settings.lyricsBackground === 'clear') return UNKNOWABLE_BG;
+    // Album cover: what's behind the text is the blurred cover under a scrim.
     // That's an AVERAGE of the whole cover, so it's estimated from the whole
     // palette (see blurredBackdropRgb) — the old near-black stand-in made a
     // bright album look safe on paper and unreadable on screen.
@@ -72,12 +84,28 @@ export function LyricsFullscreen(): JSX.Element {
   return (
     <div
       className="lyrics-fullscreen"
-      style={{ color: textColor, textShadow: lyricColor.shadow ?? undefined }}
+      style={{
+        color: textColor,
+        textShadow: lyricColor.shadow ?? undefined,
+        // Every lyric size in every style is a multiple of this — see
+        // lyricStyles.css and GiantWordStage.
+        '--lyric-scale': settings.lyricsScale,
+      } as React.CSSProperties}
     >
-      {settings.albumFullBleed && settings.lyricsBackground === 'transparent' && <AlbumBackdrop />}
-      {settings.lyricsBackground !== 'transparent' && (
+      {/* Album cover mode paints an opaque base BEFORE the art. The art is
+          cover-cropped and normally fills the screen on its own, but a track
+          with no artwork, or the moment before one loads, would otherwise show
+          the desktop through a mode whose whole point is that it doesn't. */}
+      {settings.lyricsBackground === 'albumCover' && (
+        <>
+          <div className="lyrics-backdrop" style={{ background: rgbCss(moodyTintRgb(palette.primary)) }} />
+          <AlbumBackdrop />
+        </>
+      )}
+      {(settings.lyricsBackground === 'albumBlend' || settings.lyricsBackground === 'custom') && (
         <div className="lyrics-backdrop" style={{ background: bgCss }} />
       )}
+      {/* Clear mode renders no backdrop at all. */}
 
       <div className="fullscreen-back">
         <IconButton title="Back to widget" onClick={() => setViewMode('island')}>

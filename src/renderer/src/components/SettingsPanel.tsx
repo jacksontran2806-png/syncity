@@ -67,14 +67,27 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }): JSX.Elemen
         </Section>
 
         <Section title="Lyrics">
+          {/* Album cover and Clear are the two ends of what this view is for:
+              a screen given over to the song, or nothing but the words over
+              whatever you were already doing. */}
           <Choice
             label="Background"
             k="lyricsBackground"
             options={[
-              ['transparent', 'Transparent'],
-              ['albumBlend', 'Album Blend'],
+              ['albumCover', 'Album cover'],
+              ['clear', 'Clear (lyrics only)'],
+              ['albumBlend', 'Album blend'],
               ['custom', 'Custom color'],
             ]}
+          />
+          <Slider
+            label="Lyric size"
+            k="lyricsScale"
+            min={60}
+            max={200}
+            step={5}
+            scale={100}
+            format={pct}
           />
           {settings.lyricsBackground === 'custom' && (
             <Row label="Background color">
@@ -109,7 +122,9 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }): JSX.Elemen
               ['giantWord', 'Giant Word'],
             ]}
           />
-          <Toggle label="Full-bleed album art" k="albumFullBleed" />
+          {/* Album fullscreen only. The lyrics view stopped reading this when
+              its blurred-cover backdrop became a background mode of its own. */}
+          <Toggle label="Album mode: full-bleed art" k="albumFullBleed" />
           {/* Independent of full-bleed art: a flat custom color behind Album
               fullscreen mode — the art (if also on) still paints over it. */}
           <Toggle label="Album mode: custom background" k="albumCustomBgEnabled" />

@@ -1,4 +1,5 @@
 import { useMemo, useRef } from 'react';
+import { useStore } from '../../store';
 import { buildWordTimeline, activeWordIndex } from '../../lib/lyricsTiming';
 import type { LyricLine } from '@shared/types';
 
@@ -47,6 +48,7 @@ export function GiantWordStage({ lyrics, elapsedMs, textColor }: Props): JSX.Ele
   // blanking out. LyricStage shows its own instrumental indicator over long
   // gaps; this is just "don't do anything visibly wrong" for short ones.
   const lastIdxRef = useRef(-1);
+  const scale = useStore((st) => st.settings.lyricsScale);
 
   const rawIdx = activeWordIndex(timeline, elapsedMs);
   if (rawIdx >= 0) lastIdxRef.current = rawIdx;
@@ -54,8 +56,12 @@ export function GiantWordStage({ lyrics, elapsedMs, textColor }: Props): JSX.Ele
   if (!timeline.length || idx < 0) return null;
 
   const ctx = canvasRef.current.getContext('2d');
-  const targetWidthPx = window.innerWidth * TARGET_WIDTH_FRAC;
-  const maxHeightPx = (window.innerHeight * MAX_HEIGHT_VH) / 100;
+  // The Giant Word is sized by measurement rather than by a CSS rule, so the
+  // scale setting has to be applied here instead — to the TARGET it is fitted
+  // to, not to the result, so the word still fits the width it is aiming for
+  // and the max-height clamp still means what it says.
+  const targetWidthPx = window.innerWidth * TARGET_WIDTH_FRAC * scale;
+  const maxHeightPx = (window.innerHeight * MAX_HEIGHT_VH * scale) / 100;
   const fontSize = ctx
     ? Math.min(fitFontSizePx(ctx, timeline[idx]!.word, targetWidthPx), maxHeightPx)
     : Math.min(targetWidthPx / 4, maxHeightPx);

@@ -51,6 +51,14 @@ export function loadSettings(): AppSettings {
       raw.lyricsCustomColor = raw.lyricsSolidColor === 'white' ? { r: 255, g: 255, b: 255 } : { r: 0, g: 0, b: 0 };
     }
     if (raw && 'lyricsSolidColor' in raw) delete raw.lyricsSolidColor;
+    // 'transparent' split in two, because it was doing two jobs through a
+    // second setting: with full-bleed art on it was the blurred-cover view,
+    // with it off it was bare lyrics over the desktop. Those are different
+    // modes and are now named as such. Which one an existing install lands on
+    // is decided by the art toggle it already had, so nobody's view changes.
+    if (raw?.lyricsBackground === 'transparent') {
+      raw.lyricsBackground = raw.albumFullBleed === false ? 'clear' : 'albumCover';
+    }
     // Overlay mode 'default' was removed — it was Free without the dragging,
     // so Free is the closest landing spot and keeps the widget where the user
     // last had it rather than snapping it to the top edge.

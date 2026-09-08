@@ -50,7 +50,7 @@ const chosen: Record<string, RGB> = {};
 for (const { name, base } of albums) {
   const pal = palette(base);
 
-  for (const mode of ['albumBlend', 'transparent'] as const) {
+  for (const mode of ['albumBlend', 'albumCover'] as const) {
     const bg = mode === 'albumBlend' ? moodyTintRgb(pal.primary) : blurredBackdropRgb(pal);
     const pick = paletteLyricColor(pal, bg, mode);
     const ratio = contrastRatio(pick.color, bg);
@@ -115,7 +115,7 @@ for (const { name, base } of albums) {
 for (const { name, base } of albums) {
   const pal = palette(base);
   if (rgbToHsl(pal.primary).s <= 0.2) continue; // greyscale cover, neutral is honest
-  for (const mode of ['albumBlend', 'transparent'] as const) {
+  for (const mode of ['albumBlend', 'albumCover'] as const) {
     const bg = mode === 'albumBlend' ? moodyTintRgb(pal.primary) : blurredBackdropRgb(pal);
     const { color } = paletteLyricColor(pal, bg, mode);
     const neutral = rgbToHsl(color).s < 0.04;
@@ -137,10 +137,19 @@ check(
   `${distinct.size} distinct colours across ${albums.length} albums`
 );
 
-// Transparent mode leans on a shadow because the blurred cover under the text
-// is an average, not a flat fill.
-const transparentPick = paletteLyricColor(palette({ r: 220, g: 60, b: 40 }), blurredBackdropRgb(palette({ r: 220, g: 60, b: 40 })), 'transparent');
-check('transparent mode always carries a subtle shadow', transparentPick.shadow !== null, String(transparentPick.shadow));
+// Album cover leans on a shadow because the blurred cover under the text is an
+// average, not a flat fill. Clear leans on one because there is no background
+// of ours at all — the text is over whatever the user has on screen.
+const red = palette({ r: 220, g: 60, b: 40 });
+const coverPick = paletteLyricColor(red, blurredBackdropRgb(red), 'albumCover');
+check('album cover mode always carries a shadow', coverPick.shadow !== null, String(coverPick.shadow));
+const clearPick = paletteLyricColor(red, { r: 128, g: 128, b: 132 }, 'clear');
+check('clear mode always carries a shadow', clearPick.shadow !== null, String(clearPick.shadow));
+check(
+  'clear mode still picks a colour from the artwork rather than plain white',
+  rgbToHsl(clearPick.color).s >= 0.04,
+  `rgb(${clearPick.color.r}, ${clearPick.color.g}, ${clearPick.color.b})`
+);
 
 // The estimated blurred backdrop must track the artwork's actual brightness —
 // the old code measured everything against a near-black stand-in, which is

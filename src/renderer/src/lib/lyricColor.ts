@@ -30,7 +30,7 @@
 import type { AlbumPalette, RGB } from '@shared/types';
 import { clampForContrast, contrastRatio, hslToRgb, relativeLuminance, rgbToHsl } from './colorUtils';
 
-export type LyricsBackground = 'transparent' | 'albumBlend' | 'custom';
+export type LyricsBackground = 'albumCover' | 'clear' | 'albumBlend' | 'custom';
 
 export interface LyricColorChoice {
   /** The text colour to paint. */
@@ -274,13 +274,17 @@ export function paletteLyricColor(
 
   return {
     color: best.color,
-    // Transparent mode always gets one: the blurred cover behind the text is
-    // an average, and the real pixels under any given line are lighter or
-    // darker than it. The shadow is what makes a single colour safe across
-    // that variation — which is the alternative to jumping to the opposite
-    // hue the moment contrast gets tight.
+    // Album cover and Clear always get one. Over a blurred cover the measured
+    // background is an average, and the real pixels under any given line are
+    // lighter or darker than it; over nothing at all the background is
+    // whatever the user happens to have on screen, which is unknowable. The
+    // shadow is what makes a single colour survive that — the alternative
+    // being to jump to the opposite hue the moment contrast gets tight.
     shadow:
-      mode === 'transparent' || compromised || best.ratio < SHADOW_BELOW_CONTRAST
+      mode === 'albumCover' ||
+      mode === 'clear' ||
+      compromised ||
+      best.ratio < SHADOW_BELOW_CONTRAST
         ? relativeLuminance(best.color) > bgLuminance
           ? '0 1px 14px rgba(0, 0, 0, 0.45)'
           : '0 1px 14px rgba(255, 255, 255, 0.35)'

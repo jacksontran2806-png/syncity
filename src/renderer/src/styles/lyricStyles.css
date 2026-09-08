@@ -40,7 +40,7 @@
 }
 .lyrics-stack-row {
   text-align: center;
-  font-size: 36px;
+  font-size: calc(36px * var(--lyric-scale, 1));
   font-weight: 500;
   max-width: 78vw;
   transition: opacity 400ms ease-out, filter 400ms ease-out, transform 400ms ease-out;
@@ -70,7 +70,7 @@
   top: 50%;
   width: min(1100px, 78vw);
   text-align: center;
-  font-size: 36px;
+  font-size: calc(36px * var(--lyric-scale, 1));
   font-weight: 500;
   transition: transform 450ms cubic-bezier(0.22, 1, 0.36, 1), opacity 400ms ease-out, filter 400ms ease-out;
 }
@@ -184,21 +184,26 @@
 }
 /* ~1.5x the earlier sizes: the active line is the focal point of the view.
    Context lines (.lyrics-stack-row, .lyrics-next-line) deliberately stay
-   small and light — the size gap is the hierarchy. */
+   small and light — the size gap is the hierarchy.
+
+   Every size here is a multiple of --lyric-scale (set on .lyrics-fullscreen
+   from the Lyric size setting). Scaling the sizes rather than transforming the
+   stage keeps the text crisp and lets it re-wrap at its new size, where a
+   transform would blur it and push long lines off the screen. */
 .lyrics-word-sm {
-  font-size: 33px;
+  font-size: calc(33px * var(--lyric-scale, 1));
   font-weight: 600;
   opacity: 0.8;
   animation-name: word-pop-sm;
 }
 .lyrics-word-md {
-  font-size: 49px;
+  font-size: calc(49px * var(--lyric-scale, 1));
 }
 .lyrics-word-lg {
-  font-size: 72px;
+  font-size: calc(72px * var(--lyric-scale, 1));
 }
 .lyrics-word-xl {
-  font-size: 100px;
+  font-size: calc(100px * var(--lyric-scale, 1));
 }
 .lyrics-word-emoji {
   font-weight: 400;
@@ -217,7 +222,7 @@
 }
 
 .lyrics-next-line {
-  font-size: 20px;
+  font-size: calc(20px * var(--lyric-scale, 1));
   opacity: 0.35;
   transition: opacity 300ms ease-out;
 }
