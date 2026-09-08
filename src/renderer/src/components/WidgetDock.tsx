@@ -6,15 +6,11 @@ import { Widget } from './Widget';
 import { PillWave } from './PillWave';
 import { DraggableBox, type PlacementEnv } from './DraggableBox';
 import { useSlideTransition } from '../hooks/useSlideTransition';
+// Shared with Notch mode's reveal band — see lib/hoverTiming for why the
+// number lives in one place now.
+import { HOVER_EXPAND_DELAY_MS } from '../lib/hoverTiming';
 
-/** A brief pass over the pill shouldn't pop the full widget open — only a
- *  sustained hover does. Long enough that dragging the pill (which necessarily
- *  hovers it the whole gesture) doesn't accidentally trip it mid-drag; a
- *  deliberate click always expands instantly regardless of this delay.
- *  Leaving re-collapses immediately (no matching delay) so it doesn't feel
- *  sticky. Notch mode doesn't use this at all — it has its own reveal band
- *  with its own timing, see useNotchHover. */
-const HOVER_EXPAND_DELAY_MS = 1500;
+
 
 interface Props {
   expandSignal: number;

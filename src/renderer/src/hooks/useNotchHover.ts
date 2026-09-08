@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
+import { HOVER_CLOSE_DELAY_MS, HOVER_EXPAND_DELAY_MS } from '../lib/hoverTiming';
 
 // Hover detection for Notch mode.
+//
+// Opening is on a dwell timer (see lib/hoverTiming), not on entry. It used to
+// be immediate, which meant the notch opened for any pointer that touched the
+// top edge of the screen on its way to something else — and meant the hover
+// delay a user set for the widget did nothing at all in the mode that ships
+// as the default.
 //
 // The collapsed notch is only ~32px tall, so a zone that matched it exactly
 // would be nearly impossible to hit coming up from below — the cursor crosses
@@ -26,27 +33,28 @@ import { useEffect, useRef, useState } from 'react';
  * pixel or two of overshoot.
  */
 const TRIGGER_PAD = 6;
-/** Grace period before collapsing. Deliberately short: the menu is meant to
- *  stay open only while you keep the pointer on it, so moving away should
- *  close it almost at once. It isn't zero because the reveal band and the
- *  panel don't share an exact edge — a few frames of slack stops a cursor
- *  crossing that seam from flickering the menu shut and open again. */
-const CLOSE_DELAY_MS = 110;
 
 export function useNotchHover(enabled: boolean, ref: React.RefObject<HTMLElement | null>): boolean {
   const [active, setActive] = useState(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout>>();
+  const openTimer = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     if (!enabled) {
       clearTimeout(closeTimer.current);
+      clearTimeout(openTimer.current);
       setActive(false);
       return;
     }
 
     const leave = () => {
+      // Leaving cancels a pending open outright. Dwell has to be continuous —
+      // otherwise a pointer that crosses the band three times on its way
+      // elsewhere accumulates its way into opening the menu.
+      clearTimeout(openTimer.current);
+      openTimer.current = undefined;
       clearTimeout(closeTimer.current);
-      closeTimer.current = setTimeout(() => setActive(false), CLOSE_DELAY_MS);
+      closeTimer.current = setTimeout(() => setActive(false), HOVER_CLOSE_DELAY_MS);
     };
 
     const onMove = (e: MouseEvent) => {
@@ -64,7 +72,14 @@ export function useNotchHover(enabled: boolean, ref: React.RefObject<HTMLElement
 
       if (inside) {
         clearTimeout(closeTimer.current);
-        setActive(true);
+        // Already open, or already counting down to open: nothing to restart.
+        // Restarting on every mousemove would mean the menu only ever opened
+        // for a pointer held perfectly still.
+        if (active || openTimer.current) return;
+        openTimer.current = setTimeout(() => {
+          openTimer.current = undefined;
+          setActive(true);
+        }, HOVER_EXPAND_DELAY_MS);
       } else {
         leave();
       }
@@ -78,8 +93,9 @@ export function useNotchHover(enabled: boolean, ref: React.RefObject<HTMLElement
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseleave', leave);
       clearTimeout(closeTimer.current);
+      clearTimeout(openTimer.current);
     };
-  }, [enabled, ref]);
+  }, [enabled, ref, active]);
 
   return active;
 }
