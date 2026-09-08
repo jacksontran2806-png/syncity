@@ -39,8 +39,12 @@ npm run dev
 | `npm run dist` | Windows installer + portable exe into `dist/` |
 | `npm run icons` | Redraw the app and tray icons |
 
-The download site is `site/` — plain HTML, no build step, deployed to Vercel
-with `vercel deploy --prod` from that directory.
+The download site is `site/` — plain HTML, no build step. Vercel is connected
+to this repo, so a push to `main` deploys it; the `vercel.json` at the root is
+what tells Vercel to skip installing and building (there is nothing to build)
+and to serve `site/` as-is. Without it, Vercel finds the Electron project's
+package.json, runs `npm run build`, and fails looking for an output directory
+that a desktop app never produces.
 
 Installed copies update themselves from GitHub releases, which makes a release
 the feed the app reads rather than just a place to put files —
