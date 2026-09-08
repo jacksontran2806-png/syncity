@@ -10,10 +10,12 @@
   align-items: center;
   justify-content: center;
   pointer-events: none;
-  /* Matches .lyrics-backdrop's own transition below, so on a track change the
-     text colour and the backdrop it's measured against ease together instead
-     of the text stepping to its new colour ahead of the background. */
-  transition: color 400ms linear;
+  /* One duration for every colour that changes on a track change — this, the
+     backdrop below, and the album crossfade in AlbumBackdrop (600ms). The
+     lyric colour is derived from the artwork (lib/lyricColor), so it has to
+     arrive WITH the new artwork rather than snapping to the next album's
+     palette while the old cover is still fading out. */
+  transition: color 600ms ease, text-shadow 600ms ease;
 }
 
 /* Album Blend / Custom background modes, painted behind everything in the
@@ -22,7 +24,7 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  transition: background 400ms linear;
+  transition: background 600ms ease;
   z-index: 1; /* below the foreground stage (10) */
 }
 
@@ -35,6 +37,9 @@
    line stays put; this is just a small supplementary sign that something is
    coming, not the whole show. */
 .instrumental-dots {
+  /* Sets its own colour inline from the palette, so it needs its own
+     transition — an inline colour doesn't inherit the shell's. */
+  transition: color 600ms ease;
   position: fixed;
   bottom: 62px;
   left: 50%;

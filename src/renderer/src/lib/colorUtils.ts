@@ -104,15 +104,13 @@ export function contrastRatio(a: RGB, b: RGB): number {
   return (hi + 0.05) / (lo + 0.05);
 }
 
-/** Spins the hue around the wheel, keeping saturation and lightness. */
-export function rotateHue(color: RGB, degrees: number): RGB {
-  const { h, s, l } = rgbToHsl(color);
-  return hslToRgb(h + degrees, s, l);
-}
-
 /** Walks the color's lightness away from the background until it clears
  *  minRatio. Keeps the hue — that's the whole point, a color that pops rather
- *  than falling back to flat white. */
+ *  than falling back to flat white.
+ *
+ *  Now a rescue path only: lib/lyricColor picks the lyric colour by scoring
+ *  candidates that are already readable, and falls back to this when a
+ *  mid-luminance background leaves none of them clearing AA. */
 export function clampForContrast(color: RGB, bg: RGB, minRatio = 4.5): RGB {
   const { h, s } = rgbToHsl(color);
   // Which direction actually wins has to be decided by the real contrast math,
@@ -135,28 +133,6 @@ export function clampForContrast(color: RGB, bg: RGB, minRatio = 4.5): RGB {
   }
   // ran out of headroom — fall back to whichever extreme actually contrasts
   return dir > 0 ? { r: 255, g: 255, b: 255 } : { r: 0, g: 0, b: 0 };
-}
-
-// Split-complementary offset: the background keeps the album's own hue, the
-// lyric color sits 150° around the wheel — one step short of the straight
-// opposite (180°). That's far enough to read as a distinct, deliberate color
-// pair (not just a darker/lighter version of the same hue) while staying
-// closer to harmonious than a full complementary clash.
-const SPLIT_COMPLEMENT_DEGREES = 150;
-
-/** Lyric text color computed live from whatever background is actually behind
- *  it. Never hardcoded, never static-white. Related to the background by a
- *  split-complementary HSL hue shift, then clamped in lightness until it
- *  clears WCAG AA (4.5:1) against that exact background — color theory picks
- *  the hue, contrast math guarantees it's actually readable. */
-export function contrastingLyricColor(bg: RGB, mode: 'transparent' | 'albumBlend' | 'custom', paletteMain: RGB): RGB {
-  // Custom: there's no album palette to relate the text to — the user's own
-  // pick IS the base hue, so split off of the background color itself.
-  const baseHue = mode === 'custom' ? bg : paletteMain;
-  // Album Blend, and Transparent contrasted against the blurred art behind it:
-  // split-complementary hue off the base so the text pops without fighting
-  // the background, then clamp its lightness until it clears WCAG AA.
-  return clampForContrast(rotateHue(baseHue, SPLIT_COMPLEMENT_DEGREES), bg, 4.5);
 }
 
 /**

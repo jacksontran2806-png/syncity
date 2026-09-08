@@ -71,8 +71,9 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }): JSX.Elemen
           />
           {settings.lyricsBackground === 'custom' && (
             <Row label="Background color">
-              {/* Lyric text color is still computed live from this pick (see
-                  colorUtils.contrastingLyricColor) — any color stays readable. */}
+              {/* Lyric text color is still chosen from the album's palette and
+                  scored for readability against this pick (see
+                  lib/lyricColor) — any color stays readable. */}
               <ColorWheelPicker
                 label="Lyrics background color"
                 value={settings.lyricsCustomColor}

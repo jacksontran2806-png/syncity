@@ -112,6 +112,9 @@
   max-width: min(1100px, 88vw);
   font-family: var(--font-body, 'General Sans', -apple-system, 'Segoe UI', sans-serif);
   font-weight: 800;
+  /* Painted inline from the album palette, so the ease on the shell doesn't
+     reach it — see .lyrics-fullscreen. */
+  transition: color 600ms ease;
 }
 /* One of these is picked per-line (seeded, see lyricsDisplay.ts) so lines
    don't all arrive the same way — matches the "creative, varied" ask
@@ -240,7 +243,8 @@
   font-family: var(--font-display, 'Clash Display', -apple-system, 'Segoe UI', sans-serif);
   font-weight: 700;
   letter-spacing: -0.03em;
-  transition: transform 450ms cubic-bezier(0.22, 1, 0.36, 1), opacity 450ms ease-out, font-size 450ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 450ms cubic-bezier(0.22, 1, 0.36, 1), opacity 450ms ease-out,
+    font-size 450ms cubic-bezier(0.22, 1, 0.36, 1), color 600ms ease;
 }
 /* incoming/outgoing stay visible (small, faint, tilted) rather than fading to
    nothing — the point is a persistent 3-word stack (upcoming below, current

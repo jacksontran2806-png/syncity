@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useStore } from '../../store';
-import { albumBlendCss, contrastingLyricColor, moodyTintRgb, rgbCss } from '../../lib/colorUtils';
+import { albumBlendCss, moodyTintRgb, rgbCss } from '../../lib/colorUtils';
+import { blurredBackdropRgb, paletteLyricColor } from '../../lib/lyricColor';
 import { detectInstrumentalGap } from '../../lib/lyricsTiming';
 import { AlbumBackdrop } from '../AlbumBackdrop';
 import { IconButton } from '../IconButton';
@@ -21,15 +22,17 @@ export function LyricsFullscreen(): JSX.Element {
 
   // Background and text colour are derived together, so they can never drift
   // out of contrast with each other. bgRgb is always a single flat color —
-  // the reference contrastingLyricColor measures against — even when the
-  // actual painted background (bgCss, below) is a multi-color gradient.
+  // the reference the lyric colour is measured against — even when the actual
+  // painted background (bgCss, below) is a multi-color gradient.
   const bgRgb: RGB = useMemo(() => {
     if (settings.lyricsBackground === 'custom') return settings.lyricsCustomColor;
     if (settings.lyricsBackground === 'albumBlend') return moodyTintRgb(palette.primary);
-    // Transparent: what's actually behind the text is the blurred art layer,
-    // which sits close to a darkened album tint — contrast against that.
-    return moodyTintRgb(palette.primary, 0.12);
-  }, [settings.lyricsBackground, settings.lyricsCustomColor, palette.primary]);
+    // Transparent: what's behind the text is the blurred cover under a scrim.
+    // That's an AVERAGE of the whole cover, so it's estimated from the whole
+    // palette (see blurredBackdropRgb) — the old near-black stand-in made a
+    // bright album look safe on paper and unreadable on screen.
+    return blurredBackdropRgb(palette);
+  }, [settings.lyricsBackground, settings.lyricsCustomColor, palette]);
 
   // What actually gets painted: Album Blend spreads the palette's colors into
   // a gradient (see albumBlendColorCount) instead of the flat single-color
@@ -41,10 +44,14 @@ export function LyricsFullscreen(): JSX.Element {
     return rgbCss(bgRgb);
   }, [settings.lyricsBackground, settings.albumBlendColorCount, palette.primary, palette.secondary, palette.tertiary, bgRgb]);
 
-  const textColor = useMemo(
-    () => rgbCss(contrastingLyricColor(bgRgb, settings.lyricsBackground, palette.primary)),
-    [bgRgb, settings.lyricsBackground, palette.primary]
+  // Sourced FROM the artwork's palette and scored for harmony, contrast,
+  // saturation and lightness together — see lib/lyricColor. The colour
+  // transitions rather than snapping when the album changes (lyrics.css).
+  const lyricColor = useMemo(
+    () => paletteLyricColor(palette, bgRgb, settings.lyricsBackground),
+    [palette, bgRgb, settings.lyricsBackground]
   );
+  const textColor = rgbCss(lyricColor.color);
 
   const hasLyrics = !!lyrics?.length;
   // A real instrumental gap (intro, or a long break between two lines) gets a
@@ -63,7 +70,10 @@ export function LyricsFullscreen(): JSX.Element {
   const showNote = !showDots && !showStage && !!nowPlaying.playing;
 
   return (
-    <div className="lyrics-fullscreen" style={{ color: textColor }}>
+    <div
+      className="lyrics-fullscreen"
+      style={{ color: textColor, textShadow: lyricColor.shadow ?? undefined }}
+    >
       {settings.albumFullBleed && settings.lyricsBackground === 'transparent' && <AlbumBackdrop />}
       {settings.lyricsBackground !== 'transparent' && (
         <div className="lyrics-backdrop" style={{ background: bgCss }} />
