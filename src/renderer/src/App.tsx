@@ -25,6 +25,23 @@ export function App(): JSX.Element {
   const panel = useStore((s) => s.panel);
   const [expandSignal, setExpandSignal] = useState(0);
 
+  // Font variables go on <html>, NOT on .overlay-root.
+  //
+  // A custom property is only visible on the element that declares it and its
+  // descendants — and base.css sets the app's default font-family on
+  // html/body/#root, all ANCESTORS of .overlay-root. Declared there, every one
+  // of those rules fell through to its hardcoded fallback, so switching the
+  // Font setting changed nothing but the handful of elements with an explicit
+  // var(--font-display) rule of their own. On the document element the whole
+  // tree inherits it, .overlay-root included, so GiantWordStage still reads
+  // the same value back for its canvas measurement (see fontThemes.ts).
+  useEffect(() => {
+    const spec = fontThemeSpec(settings.fontTheme);
+    const root = document.documentElement;
+    root.style.setProperty('--font-display', spec.display);
+    root.style.setProperty('--font-body', spec.body);
+  }, [settings.fontTheme]);
+
   useEffect(() => {
     const offNowPlaying = window.syncity.onNowPlaying(setNowPlaying);
     const offLyrics = window.syncity.onLyrics(setLyrics);
@@ -137,11 +154,6 @@ export function App(): JSX.Element {
         '--panel-opacity': settings.panelOpacity,
         '--pill-width': `${settings.pillWidth}px`,
         '--pill-height': `${settings.pillHeight}px`,
-        // Every sheet reads these rather than naming a family directly, so one
-        // setting re-skins the whole app. GiantWordStage reads the same values
-        // back off the DOM for its canvas measurement — see fontThemes.ts.
-        '--font-display': fontThemeSpec(settings.fontTheme).display,
-        '--font-body': fontThemeSpec(settings.fontTheme).body,
         // Chrome fill, as bare "r, g, b" so each rule can pair it with its own
         // alpha. Album tint runs through moodyTintRgb rather than using the
         // palette raw: a cover's dominant colour is often bright enough to

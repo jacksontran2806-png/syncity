@@ -26,9 +26,9 @@ const CONTEXT_SCALE = 0.25;
 function fitFontSizePx(ctx: CanvasRenderingContext2D, text: string, targetWidthPx: number): number {
   const probe = 100;
   // Must be the SAME family the word actually renders in, or every word is
-  // sized against the metrics of a font nobody sees. Read live off
-  // .overlay-root — that's the element App.tsx sets the variable on, and a
-  // custom property is only visible on that element and its descendants.
+  // sized against the metrics of a font nobody sees. App.tsx declares the
+  // variable on <html> so the whole document inherits it; reading it off
+  // .overlay-root (a descendant) gets the same inherited value.
   const root = document.querySelector('.overlay-root') ?? document.documentElement;
   const family =
     getComputedStyle(root).getPropertyValue('--font-display').trim() || `'Clash Display', sans-serif`;
