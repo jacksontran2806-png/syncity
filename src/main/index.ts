@@ -75,6 +75,10 @@ app.setAppUserModelId('com.syncity.app');
 // just shows the overlay of the copy that is already there.
 const isPrimaryInstance = app.requestSingleInstanceLock();
 if (!isPrimaryInstance) {
+  // Said out loud because the exit is otherwise indistinguishable from a
+  // crash: `npm run dev` while an installed copy is in the tray looks like the
+  // dev build starting and immediately dying for no reason.
+  console.log('[instance] another copy of Syncity is already running — exiting.');
   app.quit();
 } else {
   app.on('second-instance', () => {
