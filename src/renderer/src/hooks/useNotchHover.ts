@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { HOVER_CLOSE_DELAY_MS, HOVER_EXPAND_DELAY_MS } from '../lib/hoverTiming';
+import { HOVER_CLOSE_DELAY_MS } from '../lib/hoverTiming';
 
 // Hover detection for Notch mode.
 //
@@ -34,7 +34,14 @@ import { HOVER_CLOSE_DELAY_MS, HOVER_EXPAND_DELAY_MS } from '../lib/hoverTiming'
  */
 const TRIGGER_PAD = 6;
 
-export function useNotchHover(enabled: boolean, ref: React.RefObject<HTMLElement | null>): boolean {
+export function useNotchHover(
+  enabled: boolean,
+  ref: React.RefObject<HTMLElement | null>,
+  /** Dwell before opening, from settings. Passed in rather than read here so
+   *  the hook stays a pure input-to-boolean and both modes are visibly driven
+   *  by the same value in WidgetDock. */
+  openDelayMs: number
+): boolean {
   const [active, setActive] = useState(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout>>();
   const openTimer = useRef<ReturnType<typeof setTimeout>>();
@@ -79,7 +86,7 @@ export function useNotchHover(enabled: boolean, ref: React.RefObject<HTMLElement
         openTimer.current = setTimeout(() => {
           openTimer.current = undefined;
           setActive(true);
-        }, HOVER_EXPAND_DELAY_MS);
+        }, openDelayMs);
       } else {
         leave();
       }
@@ -95,7 +102,7 @@ export function useNotchHover(enabled: boolean, ref: React.RefObject<HTMLElement
       clearTimeout(closeTimer.current);
       clearTimeout(openTimer.current);
     };
-  }, [enabled, ref, active]);
+  }, [enabled, ref, active, openDelayMs]);
 
   return active;
 }

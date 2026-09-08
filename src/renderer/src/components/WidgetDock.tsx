@@ -6,9 +6,7 @@ import { Widget } from './Widget';
 import { PillWave } from './PillWave';
 import { DraggableBox, type PlacementEnv } from './DraggableBox';
 import { useSlideTransition } from '../hooks/useSlideTransition';
-// Shared with Notch mode's reveal band — see lib/hoverTiming for why the
-// number lives in one place now.
-import { HOVER_EXPAND_DELAY_MS } from '../lib/hoverTiming';
+
 
 
 
@@ -26,7 +24,9 @@ export function WidgetDock({ expandSignal }: Props): JSX.Element {
   const isNotch = mode === 'notch';
 
   const boxRef = useRef<HTMLDivElement | null>(null);
-  const notchHovered = useNotchHover(isNotch, boxRef);
+  // Same dwell for both modes — it is one setting, and a pointer resting on
+  // the widget means the same thing wherever the widget happens to be.
+  const notchHovered = useNotchHover(isNotch, boxRef, settings.hoverExpandDelayMs);
 
   // Keyed on the track id so a genuine song change animates, while the poll
   // re-sending the same track every few seconds does not.
@@ -40,10 +40,15 @@ export function WidgetDock({ expandSignal }: Props): JSX.Element {
   // the hover-expand timer and swap the pill out for the full widget out from
   // under the cursor mid-gesture (see DraggableBox's onDragStateChange).
   const draggingRef = useRef(false);
+  // Read through a ref so handleHoverChange stays a stable callback: making it
+  // depend on the setting would rebuild it on every change, and DraggableBox
+  // would re-subscribe its listeners mid-hover.
+  const hoverDelayRef = useRef(settings.hoverExpandDelayMs);
+  hoverDelayRef.current = settings.hoverExpandDelayMs;
   const handleHoverChange = useCallback((isHovered: boolean) => {
     if (draggingRef.current) return;
     clearTimeout(hoverTimer.current);
-    if (isHovered) hoverTimer.current = setTimeout(() => setHovered(true), HOVER_EXPAND_DELAY_MS);
+    if (isHovered) hoverTimer.current = setTimeout(() => setHovered(true), hoverDelayRef.current);
     else setHovered(false);
   }, []);
   // Mirrors showPill so handleDragStateChange (a stable callback) can read the

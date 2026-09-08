@@ -5,6 +5,7 @@ import { ColorWheelPicker } from './ColorWheelPicker';
 import { SpotifySetup } from './SpotifySetup';
 import { UpdateRow } from './UpdateRow';
 import { FONT_THEMES } from '../lib/fontThemes';
+import { HOVER_DELAY_MAX_MS, HOVER_DELAY_MIN_MS } from '../lib/hoverTiming';
 import type { FontTheme } from '@shared/types';
 
 const LYRIC_NUDGE_MS = 250;
@@ -216,6 +217,16 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }): JSX.Elemen
             label="Font"
             k="fontTheme"
             options={FONT_OPTIONS}
+          />
+          {/* Applies to both overlay modes: resting on the pill, or in the
+              notch's reveal band at the top of the screen. */}
+          <Slider
+            label="Hover to open"
+            k="hoverExpandDelayMs"
+            min={HOVER_DELAY_MIN_MS}
+            max={HOVER_DELAY_MAX_MS}
+            step={50}
+            format={(v) => `${(v / 1000).toFixed(2)}s`}
           />
           <Toggle label="Auto-hide widget" k="autoHideWidget" hint="Ctrl+Alt+L" />
           {settings.autoHideWidget && (

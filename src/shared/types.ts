@@ -191,6 +191,10 @@ export interface AppSettings {
   widgetCollapseAnimation: WidgetAnimStyle;
   /** Typeface pairing for the whole app — see FontTheme. */
   fontTheme: FontTheme;
+  /** How long the pointer has to rest on the pill, or in the notch's reveal
+   *  band, before the widget opens. Both modes read it — see
+   *  renderer/lib/hoverTiming for the bounds and why they are what they are. */
+  hoverExpandDelayMs: number;
   /** Where the compact widget sits and how it's revealed — see OverlayMode. */
   overlayMode: OverlayMode;
   /** Neutral chrome, or tinted from the album cover — see ChromeTint. */
@@ -249,6 +253,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   widgetExpandAnimation: 'genie',
   widgetCollapseAnimation: 'genie',
   fontTheme: 'studio',
+  hoverExpandDelayMs: 1500,
   overlayMode: 'notch',
   chromeTint: 'neutral',
   widgetPosition: null,
