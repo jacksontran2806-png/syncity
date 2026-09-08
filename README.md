@@ -50,6 +50,18 @@ Installed copies update themselves from GitHub releases, which makes a release
 the feed the app reads rather than just a place to put files —
 [docs/releasing.md](docs/releasing.md) covers what one has to contain.
 
+`syncity-app.vercel.app` is a deployment alias, and Vercel will not attach a
+`.vercel.app` subdomain to a project as a proper domain, so it does not follow
+new deployments on its own. After a site change:
+
+```bash
+vercel alias set <new-deployment-url> syncity-app.vercel.app
+```
+
+`site-one-rho-92.vercel.app` is the project's own production alias and does
+follow automatically. A real domain would do the same and read better than
+either.
+
 Playback control requires Spotify Premium. Reading what is playing does not.
 Apple Music support is stubbed but not functional — see
 [docs/apple-music-setup.md](docs/apple-music-setup.md).

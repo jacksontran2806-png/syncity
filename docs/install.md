@@ -5,7 +5,10 @@ runtime.
 
 ## Download
 
-Two builds come out of `npm run dist`, both in `dist/`:
+**[syncity-app.vercel.app](https://syncity-app.vercel.app)** has both builds,
+or take them from a
+[GitHub release](https://github.com/jacksontran2806-png/syncity/releases/latest).
+Building locally, `npm run dist` writes the same two files into `dist/`:
 
 | File | What it does |
 | --- | --- |
