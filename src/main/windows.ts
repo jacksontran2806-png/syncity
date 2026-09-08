@@ -1,4 +1,5 @@
 import { BrowserWindow, screen, ipcMain } from 'electron';
+import { resourcePath } from './assets';
 import path from 'node:path';
 import { is } from './env';
 import { WINDOWED_SIZE, type WindowMode } from '../shared/types';
@@ -110,6 +111,10 @@ export function createOverlayWindow(displayId: number | null, mode: WindowMode =
 
   const win = new BrowserWindow({
     ...bounds,
+    // Set even though skipTaskbar hides this window from the taskbar: it is
+    // what Alt-Tab, the "app is using your screen" affordances and any future
+    // window of ours inherit, and without it they all show Electron's default.
+    icon: resourcePath('app-icon.png'),
     frame: false,
     transparent: true,
     backgroundColor: '#00000000',

@@ -1,16 +1,26 @@
-import { Tray, Menu, nativeImage, app } from 'electron';
-import path from 'node:path';
+import { Tray, Menu, nativeImage, app, nativeTheme } from 'electron';
 import { getOverlayWindow } from './windows';
+import { resourcePath } from './assets';
 
 let tray: Tray | null = null;
+
+/** Windows does not invert a tray icon to suit the taskbar, so the app ships
+ *  both inks and picks by theme — a white glyph is invisible on a light
+ *  taskbar, and vice versa. */
+function trayImage(): Electron.NativeImage {
+  const file = nativeTheme.shouldUseDarkColors ? 'tray-icon.png' : 'tray-icon-light.png';
+  return nativeImage.createFromPath(resourcePath(file)).resize({ width: 16, height: 16 });
+}
 
 /** Builds the tray icon and its menu. The app has no taskbar presence, so this
  *  is the only always-available way to show/hide the overlay or quit. */
 export function createTray(onOpenSettings: () => void): Tray {
-  const iconPath = path.join(__dirname, '../../resources/tray-icon.png');
-  const icon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
-  tray = new Tray(icon);
+  tray = new Tray(trayImage());
   tray.setToolTip('Syncity');
+  // The taskbar can change colour under a running app (theme switch, or the
+  // scheduled light/dark change Windows offers), and a tray icon that only
+  // matched at launch would quietly disappear.
+  nativeTheme.on('updated', () => tray?.setImage(trayImage()));
 
   const rebuildMenu = () => {
     const win = getOverlayWindow();
