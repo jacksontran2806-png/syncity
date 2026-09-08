@@ -27,6 +27,12 @@ interface SyncityState {
   panel: PanelId;
   viewMode: ViewMode;
   audioBars: Float32Array; // smoothed 0..1 magnitude per band, see audio.ts
+  /** Whether the spectrum visualizer is mounted and on screen. Set by
+   *  PillWave itself, read by useSpectrumCapture to decide whether system
+   *  audio capture needs to be running at all — the pill is the only thing
+   *  that draws these bars, and it is absent whenever the widget is
+   *  expanded, a fullscreen view is up, or the overlay is hidden. */
+  spectrumVisible: boolean;
   spotifyStatus: SpotifyStatus;
   monitors: DisplayInfo[];
 
@@ -42,6 +48,7 @@ interface SyncityState {
   togglePanel: (panel: Exclude<PanelId, 'none'>) => void;
   setViewMode: (mode: ViewMode) => void;
   setAudioBars: (bars: Float32Array) => void;
+  setSpectrumVisible: (visible: boolean) => void;
   updateSettings: (partial: Partial<AppSettings>) => Promise<void>;
   refreshSpotifyStatus: () => Promise<void>;
   connectSpotify: () => Promise<void>;
@@ -65,6 +72,7 @@ export const useStore = create<SyncityState>((set, get) => ({
   panel: 'none',
   viewMode: 'island',
   audioBars: new Float32Array(0),
+  spectrumVisible: false,
   spotifyStatus: { authed: false, clientIdConfigured: true, clientId: '', redirectUri: '' },
   monitors: [],
 
@@ -85,6 +93,7 @@ export const useStore = create<SyncityState>((set, get) => ({
   togglePanel: (panel) => set((s) => ({ panel: s.panel === panel ? 'none' : panel })),
   setViewMode: (mode) => set({ viewMode: mode, panel: 'none' }),
   setAudioBars: (bars) => set({ audioBars: bars }),
+  setSpectrumVisible: (spectrumVisible) => set({ spectrumVisible }),
 
   updateSettings: async (partial) => {
     const updated = await window.syncity.updateSettings(partial);

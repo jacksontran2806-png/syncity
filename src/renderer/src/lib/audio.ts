@@ -1,8 +1,9 @@
-// System-audio (loopback) capture, running for the app's whole lifetime —
-// feeds the widget pill's compact spectrum visualizer. Best-effort: any
-// failure here (capture denied, no loopback device, non-Windows platform)
-// just means the visualizer falls back to its own idle animation, never
-// throws upward.
+// System-audio (loopback) capture — feeds the widget pill's compact spectrum
+// visualizer. Started and stopped on demand by hooks/useSpectrumCapture, which
+// owns the question of WHEN this should run; everything here is about turning
+// the stream into bars. Best-effort: any failure (capture denied, no loopback
+// device, non-Windows platform) just means the visualizer falls back to its own
+// idle animation, never throws upward.
 //
 // NOT independently verified: this sandbox has no display/audio device to
 // test against. Windows loopback capture via Electron's

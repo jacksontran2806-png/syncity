@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useStore } from './store';
 import { useClickThrough } from './hooks/useClickThrough';
-import { startSpectrumBars, type AudioReactiveHandle } from './lib/audio';
+import { useSpectrumCapture } from './hooks/useSpectrumCapture';
 import { fontThemeSpec } from './lib/fontThemes';
 import { chromeTintRgb } from './lib/colorUtils';
 import { WidgetDock } from './components/WidgetDock';
@@ -11,11 +11,13 @@ import { LyricsFullscreen } from './components/lyrics/LyricsFullscreen';
 
 export function App(): JSX.Element {
   useClickThrough();
+  // System-audio capture, started and stopped around the pill's spectrum
+  // rather than held open for the app's lifetime. See the hook.
+  useSpectrumCapture();
 
   const setNowPlaying = useStore((s) => s.setNowPlaying);
   const setLyrics = useStore((s) => s.setLyrics);
   const setPalette = useStore((s) => s.setPalette);
-  const setAudioBars = useStore((s) => s.setAudioBars);
   const setPanel = useStore((s) => s.setPanel);
   const setViewMode = useStore((s) => s.setViewMode);
   const refreshSpotifyStatus = useStore((s) => s.refreshSpotifyStatus);
@@ -139,25 +141,6 @@ export function App(): JSX.Element {
   useEffect(() => {
     window.syncity.setFullscreenView(viewMode !== 'island');
   }, [viewMode]);
-
-  // Runs for the app's whole lifetime, not gated on any mode or view — the
-  // widget pill's spectrum visualizer can be on screen any time, so capture
-  // just stays up in the background rather than starting/stopping around
-  // whatever else is happening. See audio.ts for why this is cheap: the
-  // decimation and smoothing happen there, so only a small settled array
-  // crosses into the store each frame, not the raw analyser buffer.
-  useEffect(() => {
-    let handle: AudioReactiveHandle | null = null;
-    let cancelled = false;
-    startSpectrumBars((bars) => setAudioBars(bars)).then((h) => {
-      if (cancelled) h?.stop();
-      else handle = h;
-    });
-    return () => {
-      cancelled = true;
-      handle?.stop();
-    };
-  }, [setAudioBars]);
 
   return (
     // One variable, set once at the root: every piece of app chrome derives its

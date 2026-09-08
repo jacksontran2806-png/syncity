@@ -4,11 +4,16 @@ import { isPageActive, onPageActiveChange } from '../lib/pageActive';
 
 // The pill's "still playing" sliver: a real bar-style spectrum visualizer.
 // audio.ts owns capture, decimation into log-spaced bands, and per-band
-// attack/decay smoothing (it runs for the app's whole lifetime, not just
-// while this is on screen) — this component only reads the already-settled
+// attack/decay smoothing — this component only reads the already-settled
 // result and draws it, so it stays cheap regardless of how long the pill's
 // been sitting there. Colored from the current track's palette instead of a
 // fixed gradient.
+//
+// This is the only consumer of those bars, so it announces itself to the store
+// while mounted: useSpectrumCapture starts capture for it and stops when the
+// pill goes away. An empty `audioBars` is a normal state, not a failure — it
+// means capture is denied, stopped, or not up yet, and the idle animation
+// below covers all three.
 
 const BAR_GAP_FRAC = 0.45; // gap as a fraction of one bar's slot width
 const IDLE_LERP = 0.05;
@@ -23,6 +28,12 @@ export function PillWave(): JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const idleRef = useRef(0);
   const idleBarsRef = useRef<number[] | null>(null);
+
+  useEffect(() => {
+    const setSpectrumVisible = useStore.getState().setSpectrumVisible;
+    setSpectrumVisible(true);
+    return () => setSpectrumVisible(false);
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
