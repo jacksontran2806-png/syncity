@@ -14,11 +14,10 @@
     "dist": "npm run build && electron-builder --win",
     "dist:dir": "npm run build && electron-builder --win --dir"
   },
+  "//dependencies": "Runtime-only, and deliberately short: electron-builder copies EVERY production dependency into the shipped app, while electron-vite bundles the renderer outright and externalizes only these for main/preload. A renderer-only package listed here ships twice — once inside the bundle, once as a node_modules copy nothing loads. Anything imported solely from src/renderer belongs in devDependencies.",
   "dependencies": {
     "dotenv": "^16.4.5",
-    "electron-updater": "^6.8.9",
-    "simplex-noise": "^4.0.3",
-    "zustand": "^4.5.5"
+    "electron-updater": "^6.8.9"
   },
   "devDependencies": {
     "@types/node": "^22.5.5",
@@ -31,7 +30,8 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "typescript": "^5.6.2",
-    "vite": "^5.4.6"
+    "vite": "^5.4.6",
+    "zustand": "^4.5.7"
   },
   "description": "Lyrics and now-playing overlay for Spotify.",
   "author": "Jackson Tran"
