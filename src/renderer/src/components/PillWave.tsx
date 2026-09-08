@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useStore } from '../store';
+import { isPageActive, onPageActiveChange } from '../lib/pageActive';
 
 // The pill's "still playing" sliver: a real bar-style spectrum visualizer.
 // audio.ts owns capture, decimation into log-spaced bands, and per-band
@@ -11,6 +12,12 @@ import { useStore } from '../store';
 
 const BAR_GAP_FRAC = 0.45; // gap as a fraction of one bar's slot width
 const IDLE_LERP = 0.05;
+/** Frame budget for the idle animation. The idle state is a slow breathing
+ *  curve — it is indistinguishable at 20fps, and this is a tray app that can
+ *  sit in exactly this state (pill on screen, nothing playing) all day, so the
+ *  other 40 frames a second are pure battery. Live audio still draws at full
+ *  rate, where the difference is visible. */
+const IDLE_FRAME_MS = 1000 / 20;
 
 export function PillWave(): JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -24,6 +31,7 @@ export function PillWave(): JSX.Element {
 
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     let raf = 0;
+    let lastIdleMs = 0;
 
     // Re-measured every frame rather than once-at-mount (+ResizeObserver):
     // the pill's CSS size is static, so it never actually changes after
@@ -40,27 +48,38 @@ export function PillWave(): JSX.Element {
       if (canvas.height !== h) canvas.height = h;
     };
 
-    const tick = () => {
+    const tick = (now: number) => {
       raf = requestAnimationFrame(tick);
-      syncSize();
 
       const live = useStore.getState().audioBars;
       let bars: ArrayLike<number>;
       if (live.length) {
         bars = live;
       } else {
-        // No signal reaching the renderer at all (capture denied, or just
-        // not started yet) — a gentle idle breathing so the pill still reads
-        // as "alive" rather than a dead flat row.
+        // No signal reaching the renderer at all (capture denied, stopped
+        // because nothing is playing, or just not started yet) — a gentle idle
+        // breathing so the pill still reads as "alive" rather than a dead flat
+        // row, at a fraction of the frame rate.
+        if (now - lastIdleMs < IDLE_FRAME_MS) return;
+        // Advance by real elapsed time, not a fixed 1/60 per call: the loop no
+        // longer runs at a fixed rate here, and a per-call increment would make
+        // the breathing speed depend on the frame budget.
+        const dtSec = lastIdleMs ? Math.min(0.25, (now - lastIdleMs) / 1000) : 1 / 60;
+        lastIdleMs = now;
         if (!idleBarsRef.current) idleBarsRef.current = new Array(26).fill(0);
-        idleRef.current += 1 / 60;
+        idleRef.current += dtSec;
         const idle = idleBarsRef.current;
+        // Lerp per elapsed frame-equivalent rather than per call, so the settle
+        // looks the same whether this ran at 20fps or 60.
+        const lerp = Math.min(1, IDLE_LERP * dtSec * 60);
         for (let i = 0; i < idle.length; i++) {
           const target = 0.08 + 0.05 * (Math.sin(idleRef.current * 1.4 + i * 0.4) * 0.5 + 0.5);
-          idle[i] = idle[i]! + (target - idle[i]!) * IDLE_LERP;
+          idle[i] = idle[i]! + (target - idle[i]!) * lerp;
         }
         bars = idle;
       }
+
+      syncSize();
 
       const { primary, secondary } = useStore.getState().palette;
       const w = canvas.width;
@@ -83,9 +102,25 @@ export function PillWave(): JSX.Element {
         ctx.fillRect(x, mid - barH / 2, barWidth, barH);
       }
     };
-    raf = requestAnimationFrame(tick);
+    // Hidden window: stop entirely rather than relying on Chromium to throttle
+    // the loop for us, and restart when the overlay is shown again — a loop
+    // that only re-arms from inside its own callback would never wake up on
+    // its own once frames stopped. See lib/pageActive.
+    const start = (): void => {
+      if (!raf) raf = requestAnimationFrame(tick);
+    };
+    const stop = (): void => {
+      if (raf) cancelAnimationFrame(raf);
+      raf = 0;
+      lastIdleMs = 0;
+    };
+    if (isPageActive()) start();
+    const offVisible = onPageActiveChange((active) => (active ? start() : stop()));
 
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      offVisible();
+      stop();
+    };
   }, []);
 
   return <canvas ref={canvasRef} className="widget-pill-wave" />;

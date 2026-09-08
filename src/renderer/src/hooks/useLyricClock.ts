@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../store';
+import { isPageActive, onPageActiveChange } from '../lib/pageActive';
 import { progressAt } from '../lib/playbackClock';
 import { activeLineIndex } from '../lib/lyricsTiming';
 
@@ -47,7 +48,7 @@ export function useLyricClock(): { elapsedMs: number; activeIdx: number } {
     const debug = syncDebugEnabled();
 
     const tick = () => {
-      raf = requestAnimationFrame(tick);
+      raf = 0;
 
       // Read through getState rather than subscribing: this effect must NOT
       // be torn down and rebuilt every time a poll lands (which is what
@@ -68,6 +69,14 @@ export function useLyricClock(): { elapsedMs: number; activeIdx: number } {
       setElapsedMs((prev) => (prev === elapsed ? prev : elapsed));
       setActiveIdx((prev) => (prev === idx ? prev : idx));
 
+      // Only a MOVING clock needs another frame. While paused the anchor is
+      // frozen, so every further frame would compute the same elapsed value and
+      // discard it — a full-rate loop behind a stationary highlight, for as
+      // long as the song stays paused. A pause, a seek, a new track or an
+      // offset change all land in the store, and the subscription below
+      // restarts the loop from there.
+      if (anchor.playing && isPageActive()) raf = requestAnimationFrame(tick);
+
       if (debug && idx !== lastLoggedIdx && idx >= 0) {
         lastLoggedIdx = idx;
         const lineStart = lyrics[idx]!.timeMs;
@@ -78,8 +87,38 @@ export function useLyricClock(): { elapsedMs: number; activeIdx: number } {
         );
       }
     };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    const wake = (): void => {
+      if (!raf && isPageActive()) raf = requestAnimationFrame(tick);
+    };
+
+    // The three inputs the clock reads. Compared by identity rather than
+    // subscribed to wholesale: the store is written to on every captured audio
+    // frame (audioBars), and waking on those would put the loop straight back
+    // to full rate while paused.
+    let lastAnchor = useStore.getState().anchor;
+    let lastLyrics = useStore.getState().lyrics;
+    let lastSettings = useStore.getState().settings;
+    const unsubscribe = useStore.subscribe((state) => {
+      if (state.anchor === lastAnchor && state.lyrics === lastLyrics && state.settings === lastSettings) return;
+      lastAnchor = state.anchor;
+      lastLyrics = state.lyrics;
+      lastSettings = state.settings;
+      wake();
+    });
+    const offVisible = onPageActiveChange((active) => {
+      if (active) wake();
+      else if (raf) {
+        cancelAnimationFrame(raf);
+        raf = 0;
+      }
+    });
+
+    wake();
+    return () => {
+      unsubscribe();
+      offVisible();
+      if (raf) cancelAnimationFrame(raf);
+    };
   }, []);
 
   return { elapsedMs, activeIdx };
