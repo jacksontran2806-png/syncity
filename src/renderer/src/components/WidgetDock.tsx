@@ -14,7 +14,7 @@ import { useSlideTransition } from '../hooks/useSlideTransition';
  *  Leaving re-collapses immediately (no matching delay) so it doesn't feel
  *  sticky. Notch mode doesn't use this at all — it has its own reveal band
  *  with its own timing, see useNotchHover. */
-const HOVER_EXPAND_DELAY_MS = 700;
+const HOVER_EXPAND_DELAY_MS = 1500;
 
 interface Props {
   expandSignal: number;
